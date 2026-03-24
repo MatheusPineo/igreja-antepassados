@@ -1,0 +1,20 @@
+# Ambientes Virtuais
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Reflex (Pasta de compilação Next.js)
+.web/
+
+# Banco de Dados e Segredos
+.env
+*.db
+*.sqlite3
+
+# Sistema
+.DS_Store
+Thumbs.db
