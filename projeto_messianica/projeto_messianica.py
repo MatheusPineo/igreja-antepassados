@@ -1,36 +1,17 @@
-"""Welcome to Reflex! This file outlines the steps to create a basic app."""
-
 import reflex as rx
 
-from rxconfig import config
+class Usuario(rx.Model, table=True):
+    """Tabela de usuários para o backup e login social."""
+    nome: str
+    email: str
+    google_id: str
 
+class Antepassado(rx.Model, table=True):
+    """Tabela que armazena os espíritos dos antepassados."""
+    nome_completo: str
+    vinculo: str  # Ex: Avô, Avó, Tio
+    linhagem: str  # Ex: Materna, Paterna
+    usuario_id: int  # Conecta este antepassado ao ID do usuário que o cadastrou
 
-class State(rx.State):
-    """The app state."""
-
-
-def index() -> rx.Component:
-    # Welcome Page (Index)
-    return rx.container(
-        rx.color_mode.button(position="top-right"),
-        rx.vstack(
-            rx.heading("Welcome to Reflex!", size="9"),
-            rx.text(
-                "Get started by editing ",
-                rx.code(f"{config.app_name}/{config.app_name}.py"),
-                size="5",
-            ),
-            rx.link(
-                rx.button("Check out our docs!"),
-                href="https://reflex.dev/docs/getting-started/introduction/",
-                is_external=True,
-            ),
-            spacing="5",
-            justify="center",
-            min_height="85vh",
-        ),
-    )
-
-
+# Inicialização obrigatória do aplicativo Reflex
 app = rx.App()
-app.add_page(index)
