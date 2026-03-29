@@ -16,36 +16,61 @@ class Antepassado(rx.Model, table=True):
 class EstadoCadastro(rx.State):
     """O Cérebro do formulário: processa, salva e lê os dados do PostgreSQL."""
     
-    # Esta variável vai guardar a lista de espíritos para mostrar na tela
     lista_antepassados: list[Antepassado] = []
+    
+    # === NOVOS CONTROLADORES DE INTERFACE ===
+    vinculo_selecionado: str = ""  # Controla o menu suspenso rigorosamente
+    
+    @rx.var
+    def total_registos(self) -> int:
+        """Conta quantos espíritos já foram adicionados."""
+        return len(self.lista_antepassados)
+        
+    @rx.var
+    def desabilita_linhagem(self) -> bool:
+        """Deteta se o vínculo selecionado não possui linhagem direta."""
+        sem_linhagem = ["Irmão", "Irmã", "Amigo(a)", "Outro"]
+        # Retorna True (Bloqueado) se a palavra estiver na lista acima
+        return self.vinculo_selecionado in sem_linhagem
 
     def carregar_dados(self):
-        """Busca todos os registros salvos no banco de dados."""
+        """Busca todos os registos e ordena do mais recente para o mais antigo."""
         with rx.session() as sessao:
-            # Comando oficial atualizado do Reflex para ler a tabela inteira
-            self.lista_antepassados = sessao.exec(Antepassado.select()).all()
+            # O '.desc()' inverte a ordem da base de dados (Descendente)
+            self.lista_antepassados = sessao.exec(
+                Antepassado.select().order_by(Antepassado.id.desc())
+            ).all()
 
     def salvar_antepassado(self, form_data: dict):
         nome = form_data.get("nome_completo")
-        vinculo = form_data.get("vinculo")
+        vinculo = self.vinculo_selecionado  # Agora a informação vem do estado controlado
         linhagem = form_data.get("linhagem")
         
+        # Lógica de Proteção: Se a linhagem estava bloqueada no ecrã, forçamos um valor neutro
+        if self.desabilita_linhagem:
+            linhagem = "Não aplicável"
+        
         if not nome or not vinculo or not linhagem:
-            return rx.window_alert("Erro: Preencha todos os campos do espírito.")
+            # Alerta visual flutuante vermelho em caso de erro
+            return rx.toast.error("Preencha todos os campos necessários.")
         
         with rx.session() as sessao:
             novo_registro = Antepassado(
                 nome_completo=nome,
                 vinculo=vinculo,
                 linhagem=linhagem,
-                usuario_id=1  # Usuário Fantasma temporário
+                usuario_id=1
             )
             sessao.add(novo_registro)
             sessao.commit()
             
-        # Recarrega a lista automaticamente logo após salvar
         self.carregar_dados()
-        return rx.window_alert(f"O registro de {nome} foi salvo com sucesso!")
+        
+        # CORREÇÃO DO BUG: Força a variável a esvaziar, limpando o menu suspenso corretamente
+        self.vinculo_selecionado = "" 
+        
+        # Feedback Visual: Notificação flutuante com o ícone de 'check' verde
+        return rx.toast.success(f"{nome} salvo com sucesso!", position="top-right")
 
 def renderizar_linha(antepassado: Antepassado):
     """Desenha uma linha individual na tabela visual."""
@@ -72,8 +97,23 @@ def index():
             rx.form(
                 rx.vstack(
                     rx.input(name="nome_completo", placeholder="Nome Completo do Espírito", required=True, width="100%"),
-                    rx.select(["Avô", "Avó", "Pai", "Mãe", "Tio", "Tia", "Irmão", "Irmã", "Bisavô", "Bisavó", "Amigo(a)", "Outro"], name="vinculo", placeholder="Selecione o Vínculo", required=True, width="100%"),
-                    rx.radio(["Materna", "Paterna"], name="linhagem", required=True),
+                   # Campo 2: Menu Suspenso (Agora Controlado)
+                    rx.select(
+                        ["Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", "Pai", "Mãe", "Tio", "Tia", "Irmão", "Irmã", "Primo", "Prima", "Amigo(a)", "Outro"],
+                        placeholder="Selecione o Vínculo",
+                        value=EstadoCadastro.vinculo_selecionado,       # O Cérebro dita o que aparece
+                        on_change=EstadoCadastro.set_vinculo_selecionado, # O Cérebro é avisado da mudança
+                        required=True,
+                        width="100%"
+                    ),
+                    
+                    # Campo 3: Botões de Seleção Única (Agora Dinâmicos)
+                    rx.radio(
+                        ["Materna", "Paterna"],
+                        name="linhagem",
+                        # Desabilita automaticamente consoante a regra do Cérebro
+                        disabled=EstadoCadastro.desabilita_linhagem, 
+                    ),
                     rx.button("Salvar Registro", type="submit", width="100%", color_scheme="blue"),
                     spacing="4",
                 ),
@@ -84,6 +124,12 @@ def index():
             ),
             
             # BLOCO 2: A Tabela Visual (Saída de Dados)
+            # O Contador de Registos
+            rx.text(
+                f"Total de registos: {EstadoCadastro.total_registos}", 
+                weight="bold", 
+                margin_top="1em"
+            ),
             rx.table.root(
                 rx.table.header(
                     rx.table.row(
