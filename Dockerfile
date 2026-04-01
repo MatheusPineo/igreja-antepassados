@@ -4,33 +4,39 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY . .
 
-# Instala dependências do sistema e Node.js (Atualizado para a versão 20 recomendada pelo log)
-RUN apt-get update && apt-get install -y \
-    curl \
-    unzip \
+# Instala dependências do sistema, Node.js e Caddy (O Maestro de Tráfego)
+RUN apt-get update && apt-get install -y curl unzip wget \
     && curl -sL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
+    && wget -qO caddy "https://caddyserver.com/api/download?os=linux&arch=amd64" \
+    && chmod +x caddy && mv caddy /usr/local/bin/ \
     && apt-get clean
 
 # Instala as dependências do Python
 RUN pip install -r requirements.txt
 
-# --- BLINDAGEM DE MEMÓRIA PARA SERVIDOR GRATUITO (512MB) ---
-# 1. Reduz o consumo máximo do Node.js de 256MB para 128MB
+# Cria o arquivo de configuração do Caddy (Roteador Interno)
+RUN echo ":8080 {" > Caddyfile && \
+    echo "    @backend path /_event* /ping* /_upload*" >> Caddyfile && \
+    echo "    handle @backend {" >> Caddyfile && \
+    echo "        reverse_proxy 127.0.0.1:8000" >> Caddyfile && \
+    echo "    }" >> Caddyfile && \
+    echo "    handle {" >> Caddyfile && \
+    echo "        reverse_proxy 127.0.0.1:3000" >> Caddyfile && \
+    echo "    }" >> Caddyfile && \
+    echo "}" >> Caddyfile
+
+# Otimizações de Memória para a Camada Gratuita
 ENV NODE_OPTIONS="--max-old-space-size=128"
-# 2. Força o Python a reciclar a memória RAM imediatamente e não fragmentar
 ENV MALLOC_ARENA_MAX=2
-# 3. Impede que os logs do Python fiquem presos na memória
 ENV PYTHONUNBUFFERED=1
-# 4. Informa ao Render exatamente onde o site está para ele parar de procurar
-ENV PORT=3000
 
 # Inicializa o Reflex e compila o frontend
 RUN reflex init
 RUN reflex export --frontend-only --no-zip
 
-# Expõe a porta principal
-EXPOSE 8000
+# Porta principal que o Render vai escutar
+EXPOSE 8080
 
-# Comando final: Migra a base de dados e liga o servidor
-CMD reflex db migrate && reflex run --env prod --backend-host 0.0.0.0
+# Inicia o Banco, o Reflex e o Proxy Caddy simultaneamente
+CMD reflex db migrate && reflex run --env prod & caddy run --config Caddyfile
