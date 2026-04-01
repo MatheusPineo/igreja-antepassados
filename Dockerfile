@@ -27,4 +27,4 @@ EXPOSE 3000
 EXPOSE 8000
 
 # Comando para rodar a aplicação em produção
-CMD ["reflex", "run", "--env", "prod"]
+CMD reflex db migrate && reflex run --env prod
