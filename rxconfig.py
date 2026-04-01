@@ -7,5 +7,4 @@ config = rx.Config(
     app_name="projeto_messianica",
     db_url=db_url,
     api_url="https://igreja-antepassados.onrender.com",
-    deploy_url="https://igreja-antepassados.onrender.com",
 )
