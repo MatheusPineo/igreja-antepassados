@@ -14,44 +14,40 @@ class Antepassado(rx.Model, table=True):
     usuario_id: int  # Conecta este antepassado ao ID do usuário que o cadastrou
 
 class EstadoCadastro(rx.State):
-    """O Cérebro do formulário: processa, salva e lê os dados do PostgreSQL."""
+    """O Cérebro do formulário: processa, salva, edita e exclui dados no PostgreSQL."""
     
     lista_antepassados: list[Antepassado] = []
+    vinculo_selecionado: str = ""
     
-    # === NOVOS CONTROLADORES DE INTERFACE ===
-    vinculo_selecionado: str = ""  # Controla o menu suspenso rigorosamente
-    
+    # === VARIÁVEIS PARA CONTROLE DE EDIÇÃO ===
+    antepassado_editando: Antepassado = Antepassado() # Guarda temporariamente o registro que será editado
+    modal_edicao_aberto: bool = False # Controla se a janela de edição está visível
+
     @rx.var
     def total_registos(self) -> int:
-        """Conta quantos espíritos já foram adicionados."""
         return len(self.lista_antepassados)
         
     @rx.var
     def desabilita_linhagem(self) -> bool:
-        """Deteta se o vínculo selecionado não possui linhagem direta."""
-        sem_linhagem = ["Irmão", "Irmã", "Amigo(a)", "Outro"]
-        # Retorna True (Bloqueado) se a palavra estiver na lista acima
+        sem_linhagem = ["Irmão", "Irmã", "Primo", "Prima", "Amigo(a)", "Outro"]
         return self.vinculo_selecionado in sem_linhagem
 
     def carregar_dados(self):
-        """Busca todos os registos e ordena do mais recente para o mais antigo."""
+        """Busca todos os registros e ordena do mais recente para o mais antigo."""
         with rx.session() as sessao:
-            # O '.desc()' inverte a ordem da base de dados (Descendente)
             self.lista_antepassados = sessao.exec(
                 Antepassado.select().order_by(Antepassado.id.desc())
             ).all()
 
     def salvar_antepassado(self, form_data: dict):
         nome = form_data.get("nome_completo")
-        vinculo = self.vinculo_selecionado  # Agora a informação vem do estado controlado
+        vinculo = self.vinculo_selecionado
         linhagem = form_data.get("linhagem")
         
-        # Lógica de Proteção: Se a linhagem estava bloqueada no ecrã, forçamos um valor neutro
         if self.desabilita_linhagem:
             linhagem = "Não aplicável"
         
         if not nome or not vinculo or not linhagem:
-            # Alerta visual flutuante vermelho em caso de erro
             return rx.toast.error("Preencha todos os campos necessários.")
         
         with rx.session() as sessao:
@@ -65,53 +61,151 @@ class EstadoCadastro(rx.State):
             sessao.commit()
             
         self.carregar_dados()
-        
-        # CORREÇÃO DO BUG: Força a variável a esvaziar, limpando o menu suspenso corretamente
         self.vinculo_selecionado = "" 
-        
-        # Feedback Visual: Notificação flutuante com o ícone de 'check' verde
         return rx.toast.success(f"{nome} salvo com sucesso!", position="top-right")
 
+    # === LOGICA DE EXCLUSÃO (DELETE) ===
+    def excluir_registo(self, id_registo: int):
+        """Remove um registro do banco de dados pelo ID."""
+        with rx.session() as sessao:
+            registo = sessao.exec(Antepassado.select().where(Antepassado.id == id_registo)).first()
+            if registo:
+                sessao.delete(registo)
+                sessao.commit()
+        self.carregar_dados()
+        return rx.toast.success("Registro removido com sucesso.")
+
+    # === LOGICA DE EDIÇÃO (UPDATE) ===
+    def abrir_modal_edicao(self, antepassado: Antepassado):
+        """Prepara o estado e abre a janela de edição."""
+        self.antepassado_editando = antepassado
+        self.vinculo_selecionado = antepassado.vinculo
+        self.modal_edicao_aberto = True
+
+    def fechar_modal(self):
+        """Fecha a janela de edição sem salvar."""
+        self.modal_edicao_aberto = False
+
+    def editar_antepassado(self, form_data: dict):
+        """Grava as alterações do registro no banco de dados."""
+        # 1. Extração segura da linhagem
+        linhagem = form_data.get("linhagem")
+        
+        # 2. Lógica de Proteção: Força um valor neutro se o campo estava desabilitado na tela
+        if self.desabilita_linhagem:
+            linhagem = "Não aplicável"
+            
+        # 3. Trava final de segurança para evitar o erro NotNullViolation no banco
+        if not linhagem:
+            return rx.toast.error("Erro: A linhagem não pode ficar em branco.")
+
+        # 4. Transação com o banco de dados
+        with rx.session() as sessao:
+            registo = sessao.exec(
+                Antepassado.select().where(Antepassado.id == self.antepassado_editando.id)
+            ).first()
+            if registo:
+                registo.nome_completo = form_data.get("nome_completo")
+                registo.vinculo = self.vinculo_selecionado
+                registo.linhagem = linhagem  # <-- Agora usamos a nossa variável protegida
+                sessao.add(registo)
+                sessao.commit()
+        
+        self.modal_edicao_aberto = False
+        self.carregar_dados()
+        return rx.toast.success("Dados atualizados com sucesso!")
+
 def renderizar_linha(antepassado: Antepassado):
-    """Desenha uma linha individual na tabela visual."""
     return rx.table.row(
         rx.table.cell(antepassado.nome_completo),
         rx.table.cell(antepassado.vinculo),
         rx.table.cell(antepassado.linhagem),
-    )  
+        rx.table.cell(
+            rx.hstack(
+                # Botão Editar
+                rx.icon(
+                    "pencil", 
+                    size=18, 
+                    cursor="pointer", 
+                    on_click=lambda: EstadoCadastro.abrir_modal_edicao(antepassado),
+                    color="blue"
+                ),
+                # Botão Excluir
+                rx.icon(
+                    "trash-2", 
+                    size=18, 
+                    cursor="pointer", 
+                    on_click=lambda: EstadoCadastro.excluir_registo(antepassado.id),
+                    color="red"
+                ),
+                spacing="3"
+            )
+        ),
+    )
 def index():
     """Esta é a página principal da aplicação."""
     return rx.center(
         rx.vstack(
-            # === NOVO: O LOGOTIPO DA IGREJA ===
+            
+            # === O MODAL DE EDIÇÃO (Janela Oculta) ===
+            rx.dialog.root(
+                rx.dialog.content(
+                    rx.dialog.title("Editar Antepassado"),
+                    rx.form(
+                        rx.vstack(
+                            rx.input(
+                                name="nome_completo", 
+                                default_value=EstadoCadastro.antepassado_editando.nome_completo,
+                                width="100%"
+                            ),
+                            rx.select(
+                                ["Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", "Pai", "Mãe", "Tio", "Tia", "Irmão", "Irmã", "Primo", "Prima", "Amigo(a)", "Outro"],
+                                value=EstadoCadastro.vinculo_selecionado,
+                                on_change=EstadoCadastro.set_vinculo_selecionado,
+                                width="100%"
+                            ),
+                            rx.radio(
+                                ["Materna", "Paterna"],
+                                name="linhagem",
+                                default_value=EstadoCadastro.antepassado_editando.linhagem,
+                                disabled=EstadoCadastro.desabilita_linhagem,
+                            ),
+                            rx.hstack(
+                                rx.button("Cancelar", on_click=EstadoCadastro.fechar_modal, variant="soft"),
+                                rx.button("Salvar Alterações", type="submit", color_scheme="blue"),
+                            ),
+                        ),
+                        on_submit=EstadoCadastro.editar_antepassado,
+                    ),
+                ),
+                open=EstadoCadastro.modal_edicao_aberto,
+            ),
+
+            # === O LOGOTIPO DA IGREJA ===
             rx.image(
-                src="/logo.png",  # O nome exato do arquivo que você colocou na pasta assets
-                width="150px",    # Tamanho controlado para não distorcer a tela
+                src="/logo.png", 
+                width="150px",   
                 height="auto",
-                margin_bottom="1em" # Dá um pequeno espaço entre a logo e o título
+                margin_bottom="1em"
             ),
             rx.heading("Registro de Antepassados", size="7"),
             rx.text("Preencha os dados do espírito para o ofício religioso."),
             
-            # BLOCO 1: O Formulário (Entrada de Dados)
+            # === BLOCO 1: O Formulário (Entrada de Dados) ===
             rx.form(
                 rx.vstack(
                     rx.input(name="nome_completo", placeholder="Nome Completo do Espírito", required=True, width="100%"),
-                   # Campo 2: Menu Suspenso (Agora Controlado)
                     rx.select(
                         ["Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", "Pai", "Mãe", "Tio", "Tia", "Irmão", "Irmã", "Primo", "Prima", "Amigo(a)", "Outro"],
                         placeholder="Selecione o Vínculo",
-                        value=EstadoCadastro.vinculo_selecionado,       # O Cérebro dita o que aparece
-                        on_change=EstadoCadastro.set_vinculo_selecionado, # O Cérebro é avisado da mudança
+                        value=EstadoCadastro.vinculo_selecionado,      
+                        on_change=EstadoCadastro.set_vinculo_selecionado,
                         required=True,
                         width="100%"
                     ),
-                    
-                    # Campo 3: Botões de Seleção Única (Agora Dinâmicos)
                     rx.radio(
                         ["Materna", "Paterna"],
                         name="linhagem",
-                        # Desabilita automaticamente consoante a regra do Cérebro
                         disabled=EstadoCadastro.desabilita_linhagem, 
                     ),
                     rx.button("Salvar Registro", type="submit", width="100%", color_scheme="blue"),
@@ -123,8 +217,7 @@ def index():
                 max_width="400px"
             ),
             
-            # BLOCO 2: A Tabela Visual (Saída de Dados)
-            # O Contador de Registos
+            # === BLOCO 2: A Tabela Visual (Saída de Dados) ===
             rx.text(
                 f"Total de registos: {EstadoCadastro.total_registos}", 
                 weight="bold", 
@@ -136,6 +229,7 @@ def index():
                         rx.table.column_header_cell("Nome do Espírito"),
                         rx.table.column_header_cell("Vínculo"),
                         rx.table.column_header_cell("Linhagem"),
+                        rx.table.column_header_cell("Ações"), 
                     ),
                 ),
                 rx.table.body(
@@ -145,22 +239,21 @@ def index():
                 margin_top="2em"
             ),
 
-            # === NOVAS CONFIGURAÇÕES DE COR E CONTRASTE ===
+            # === CONFIGURAÇÕES DE COR E CONTRASTE ===
             align="center",
             padding="2em",
-            border="1px solid #333333",  # Borda mais escura para não ofuscar
+            border="1px solid #333333",
             border_radius="8px",
             box_shadow="lg",
             width="100%",
             max_width="800px",
-            background_color="#1E1E1E",  # Fundo da caixa de cadastro (Cinza Escuro)
-            color="white"                # Força todo o texto de dentro a ser branco
+            background_color="#1E1E1E",
+            color="white"
         ),
-        # === COR DE FUNDO DA TELA INTEIRA ===
         min_height="100vh",
         padding_y="4em",
-        background_color="#121212"       # Fundo da página inteira (Cinza Quase Preto)
-    )
+        background_color="#121212"
+    ) 
 # Inicialização obrigatória do aplicativo Reflex
 app = rx.App()
 app.add_page(index, on_load=EstadoCadastro.carregar_dados) # Esta linha conecta a interface ao aplicativo
