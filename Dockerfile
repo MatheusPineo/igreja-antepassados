@@ -23,7 +23,7 @@ ENV MALLOC_ARENA_MAX=2
 # 3. Impede que os logs do Python fiquem presos na memória
 ENV PYTHONUNBUFFERED=1
 # 4. Informa ao Render exatamente onde o site está para ele parar de procurar
-ENV PORT=8000
+ENV PORT=3000
 
 # Inicializa o Reflex e compila o frontend
 RUN reflex init
