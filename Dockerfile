@@ -33,4 +33,4 @@ RUN reflex export --frontend-only --no-zip
 EXPOSE 8000
 
 # Comando final: Migra a base de dados e liga o servidor
-CMD reflex db migrate && reflex run --env prod
+CMD reflex db migrate && reflex run --env prod --frontend-port 3000 --backend-port 8000
