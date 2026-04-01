@@ -4,12 +4,14 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY . .
 
-# Instala dependências do sistema, Node.js e Caddy (O Maestro de Tráfego)
+# Instala dependências do sistema, Node.js e Caddy (via GitHub Oficial para evitar falhas)
 RUN apt-get update && apt-get install -y curl unzip wget \
     && curl -sL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && wget -qO caddy "https://caddyserver.com/api/download?os=linux&arch=amd64" \
-    && chmod +x caddy && mv caddy /usr/local/bin/ \
+    && wget -qO caddy.tar.gz "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz" \
+    && tar -xzf caddy.tar.gz caddy \
+    && mv caddy /usr/local/bin/ \
+    && chmod +x /usr/local/bin/caddy \
     && apt-get clean
 
 # Instala as dependências do Python
