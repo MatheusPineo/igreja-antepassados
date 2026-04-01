@@ -1,10 +1,10 @@
-# 1: Construção
+# Estágio 1: Construção
 FROM python:3.11-slim
 
 WORKDIR /app
 COPY . .
 
-# Instalar as dependências do sistema e Node.js
+# Instala dependências do sistema e Node.js
 RUN apt-get update && apt-get install -y \
     curl \
     unzip \
@@ -12,10 +12,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && apt-get clean
 
-# Instalar as dependências do Python
+# Instala as dependências do Python
 RUN pip install -r requirements.txt
 
-# Inicializar o Reflex e compilar o frontend
+# Força o Node.js a consumir no máximo 256 MB de RAM
+ENV NODE_OPTIONS="--max-old-space-size=256"
+
+# Inicializa o Reflex e compila o frontend
 RUN reflex init
 RUN reflex export --frontend-only --no-zip
 
