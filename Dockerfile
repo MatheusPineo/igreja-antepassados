@@ -4,7 +4,7 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY . .
 
-# Instala dependências do sistema, Node.js e Caddy (via GitHub Oficial para evitar falhas)
+# Instala dependências do sistema e Caddy (O Node.js só é instalado para a fase de compilação)
 RUN apt-get update && apt-get install -y curl unzip wget \
     && curl -sL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
@@ -17,28 +17,36 @@ RUN apt-get update && apt-get install -y curl unzip wget \
 # Instala as dependências do Python
 RUN pip install -r requirements.txt
 
-# Cria o arquivo de configuração do Caddy (Roteador Interno)
+# Roteamento Inteligente: O Caddy entrega a interface (HTML) de imediato e protege o Backend
 RUN echo ":8080 {" > Caddyfile && \
+    echo "    encode gzip" >> Caddyfile && \
     echo "    @backend path /_event* /ping* /_upload*" >> Caddyfile && \
     echo "    handle @backend {" >> Caddyfile && \
     echo "        reverse_proxy 127.0.0.1:8000" >> Caddyfile && \
     echo "    }" >> Caddyfile && \
     echo "    handle {" >> Caddyfile && \
-    echo "        reverse_proxy 127.0.0.1:3000" >> Caddyfile && \
+    echo "        root * /app/frontend_static" >> Caddyfile && \
+    echo "        try_files {path} {path}.html {path}/ /404.html" >> Caddyfile && \
+    echo "        file_server" >> Caddyfile && \
     echo "    }" >> Caddyfile && \
     echo "}" >> Caddyfile
 
-# Otimizações de Memória para a Camada Gratuita
+# Otimizações Extremas de Memória
 ENV NODE_OPTIONS="--max-old-space-size=128"
 ENV MALLOC_ARENA_MAX=2
 ENV PYTHONUNBUFFERED=1
 
-# Inicializa o Reflex e compila o frontend
+# Inicializa o Reflex e compila a "Pele" do site
 RUN reflex init
 RUN reflex export --frontend-only --no-zip
+
+# Proteção de Versões: Copia a interface gerada para uma pasta segura, independentemente da versão do Reflex
+RUN mkdir -p /app/frontend_static && \
+    cp -r /app/.web/build/client/* /app/frontend_static/ 2>/dev/null || \
+    cp -r /app/.web/_static/* /app/frontend_static/ 2>/dev/null || true
 
 # Porta principal que o Render vai escutar
 EXPOSE 8080
 
-# Inicia o Banco, o Reflex e o Proxy Caddy simultaneamente
-CMD reflex db migrate && reflex run --env prod & caddy run --config Caddyfile
+# Inicia APENAS o backend do Reflex e liga o Caddy
+CMD reflex db migrate && reflex run --env prod --backend-only & caddy run --config Caddyfile
