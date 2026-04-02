@@ -29,7 +29,7 @@ class EstadoCadastro(rx.State):
         
     @rx.var
     def desabilita_linhagem(self) -> bool:
-        sem_linhagem = ["Irmão", "Irmã", "Primo", "Prima", "Amigo(a)", "Outro"]
+        sem_linhagem = ["Pai", "Mãe", "Irmão", "Irmã", "Amigo(a)", "Outro"]
         return self.vinculo_selecionado in sem_linhagem
 
     def carregar_dados(self):
