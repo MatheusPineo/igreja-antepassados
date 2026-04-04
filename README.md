@@ -3,6 +3,7 @@
 🚀 **Acesse o projeto ao vivo:** [igreja-antepassados.onrender.com](https://igreja-antepassados.onrender.com/)
 
 *(Nota: O carregamento inicial pode demorar cerca de 60 segundos se o servidor estiver inativo).*
+<img width="1476" height="859" alt="Screenshot_2" src="https://github.com/user-attachments/assets/bf38fb9e-388b-4f49-8c1d-88c11a3d8c00" />
 
 Uma aplicação Full-Stack moderna para o gerenciamento de registros genealógicos, desenvolvida para demonstrar proficiência em engenharia de software, manipulação de banco de dados e deploy em nuvem.
 
