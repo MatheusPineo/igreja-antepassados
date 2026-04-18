@@ -194,7 +194,7 @@ class EstadoCadastro(rx.State):
         yield rx.toast.success("Atualizado!")
 
     async def exportar_pdf(self):
-            print("--- Chamada de exportar_pdf iniciada (memória) ---")
+            print("--- Chamada de exportar_pdf iniciada (memória com coordenadas reais) ---")
             from .projeto_messianica import AuthState
             from reportlab.pdfgen import canvas
             import io
@@ -208,25 +208,49 @@ class EstadoCadastro(rx.State):
                 if os.path.exists(image_path):
                     c.drawImage(image_path, 0, 0, width=210*mm, height=297*mm, preserveAspectRatio=True)
 
-                c.setFont("Helvetica", 10)
-                c.drawString(40*mm, 200*mm, f"{user.nome_real} {user.sobrenome}")
-                c.drawString(40*mm, 190*mm, f"{user.igreja}")
-
-                c.setFont("Helvetica", 8)
+                # --- DADOS DO RODAPÉ (Coordenadas Gemini Web) ---
+                c.setFont("Helvetica", 9)
                 data_hoje = datetime.now().strftime("%d/%m/%Y")
                 hora_atual = datetime.now().strftime("%H:%M:%S")
 
-                c.drawString(20*mm, 20*mm, f"Baturité, {data_hoje}") 
-                c.drawString(60*mm, 15*mm, f"Nome: {user.nome_real} {user.sobrenome}")
-                c.drawString(120*mm, 15*mm, f"Igreja: {user.igreja}")
-                c.drawString(20*mm, 10*mm, f"Enviado em {data_hoje} às {hora_atual}")
-                c.drawRightString(195*mm, 10*mm, "Página 1/2")
+                # Cálculo dinâmico do centro da página
+                largura_a4, altura_a4 = A4
+                centro_x = largura_a4 / 2.0
+
+                c.setFont("Helvetica", 13)
+                ano_atual = datetime.now().strftime("%Y")
+                cidade = user.igreja if user.igreja and user.igreja != "Não aplicável" else "Cidade"
+                c.drawCentredString(centro_x, 20*mm, f"{cidade}, 02 de novembro de {ano_atual}") 
+
+                c.setFont("Helvetica", 9)
+                c.drawString(20*mm, 15*mm, f"Nome: {user.nome_real} {user.sobrenome}")
+                c.drawString(20*mm, 10*mm, f"Igreja: {user.igreja}")
+                c.drawString(20*mm, 5*mm, f"Enviado em {data_hoje} às {hora_atual}")
+
+
+                c.drawRightString(195*mm, 5*mm, "Página 1/1")
+
+                # --- CORPO DA TABELA (Lista Dinâmica) ---
+                c.setFont("Helvetica-Bold", 10)
+                # Cabeçalhos da tabela (conforme sugerido)
+                c.drawString(20*mm, 218*mm, "Nome Espírito/Família")
+                c.drawString(140*mm, 218*mm, "Parentesco / Linhagem")
+                
+                c.setFont("Helvetica", 10)
+                y_pos = 205*mm # Início da primeira linha de dados
+                
+                for ant in self.lista_antepassados:
+                    # Se a lista for muito grande, evita escrever sobre o rodapé
+                    if y_pos < 60*mm:
+                        break 
+                        
+                    c.drawString(20*mm, y_pos, ant.nome_completo)
+                    c.drawString(140*mm, y_pos, f"{ant.vinculo} ({ant.linhagem})")
+                    y_pos -= 6*mm # Espaçamento entre linhas sugerido
 
                 c.save()
                 pdf_data = buffer.getvalue()
                 buffer.close()
-                print("PDF gerado em memória.")
-
             except Exception as e:
                 print(f"ERRO GERAL na geração: {e}")
                 yield rx.toast.error(f"Ocorreu um erro ao gerar o PDF.")
@@ -234,9 +258,7 @@ class EstadoCadastro(rx.State):
             
             # Gera o nome de arquivo dinâmico
             timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-            primeiro_nome = user.nome_real if user.nome_real else "Usuario"
-            sobrenome = user.sobrenome if user.sobrenome else ""
-            nome_arquivo = f"{primeiro_nome}_{sobrenome}_{timestamp}.pdf".replace(" ", "_").replace(":", "-")
+            nome_arquivo = f"{user.nome_real}_{user.sobrenome}_{timestamp}.pdf".replace(" ", "_").replace(":", "-")
 
             print(f"Disparando download: {nome_arquivo}")
             yield rx.download(data=pdf_data, filename=nome_arquivo)
