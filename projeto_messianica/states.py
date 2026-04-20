@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from .constants import TIPOS_USUARIO, IGREJAS, VINCULOS_ANTEPASSADOS, LINHAGENS, ESTADOS_CIVIS, SEXOS, FAMILIAS
 
 class EstadoCadastro(rx.State):
     lista_antepassados: list[Antepassado] = []
@@ -16,6 +17,8 @@ class EstadoCadastro(rx.State):
     modal_edicao_aberto: bool = False
     
     tipo_usuario_selecionado: str = ""
+    estado_civil_selecionado: str = ""
+    sexo_selecionado: str = ""
     modal_perfil_aberto: bool = False
     
     is_editing_photo: bool = False
@@ -31,7 +34,7 @@ class EstadoCadastro(rx.State):
         
     @rx.var
     def desabilita_linhagem(self) -> bool:
-        sem_linhagem = ["Pai", "Mãe", "Irmão", "Irmã", "Amigo(a)", "Outro"]
+        sem_linhagem = ["Pai", "Mãe", "Irmão", "Irmã", "Amigo(a)", "Outro", "Cônjuge", "Filho(a)", "Neto(a)", "Bisneto(a)"]
         return self.vinculo_selecionado in sem_linhagem
 
     @rx.var
@@ -43,10 +46,11 @@ class EstadoCadastro(rx.State):
         return self.temp_img_base64 != ""
 
     async def abrir_modal_perfil(self):
-        # A importação circular é um risco aqui, prefiro usar um import relativo ou passar a instância
         from .projeto_messianica import AuthState
         auth = await self.get_state(AuthState)
         self.tipo_usuario_selecionado = auth.usuario_atual.tipo_usuario
+        self.estado_civil_selecionado = auth.usuario_atual.estado_civil
+        self.sexo_selecionado = auth.usuario_atual.sexo
         self.is_editing_photo = False
         self.temp_img_base64 = ""
         self.modal_perfil_aberto = True
@@ -125,6 +129,8 @@ class EstadoCadastro(rx.State):
         nome_real = form_data.get("nome_real")
         sobrenome = form_data.get("sobrenome")
         tipo = self.tipo_usuario_selecionado
+        estado_civil = self.estado_civil_selecionado
+        sexo = self.sexo_selecionado
         igreja = form_data.get("igreja", "") if tipo == "Membro" else "Não aplicável"
         with rx.session() as sessao:
             user = sessao.exec(Usuario.select().where(Usuario.id == auth.usuario_atual.id)).first()
@@ -132,6 +138,8 @@ class EstadoCadastro(rx.State):
                 user.nome_real = nome_real
                 user.sobrenome = sobrenome
                 user.tipo_usuario = tipo
+                user.estado_civil = estado_civil
+                user.sexo = sexo
                 user.igreja = igreja
                 sessao.add(user)
                 sessao.commit()
@@ -147,7 +155,7 @@ class EstadoCadastro(rx.State):
             return
         with rx.session() as sessao:
             self.lista_antepassados = sessao.exec(
-                Antepassado.select().where(Antepassado.usuario_id == auth.usuario_atual.id).order_by(Antepassado.id.desc())
+                Antepassado.select().where(Antepassado.usuario_id == auth.usuario_atual.id)
             ).all()
 
     async def salvar_antepassado(self, form_data: dict):
@@ -156,8 +164,9 @@ class EstadoCadastro(rx.State):
         nome = form_data.get("nome_completo")
         vinculo = self.vinculo_selecionado
         linhagem = form_data.get("linhagem", "Não aplicável") if not self.desabilita_linhagem else "Não aplicável"
+        familia = form_data.get("familia", "Minha Família")
         with rx.session() as sessao:
-            novo = Antepassado(nome_completo=nome, vinculo=vinculo, linhagem=linhagem, usuario_id=auth.usuario_atual.id)
+            novo = Antepassado(nome_completo=nome, vinculo=vinculo, linhagem=linhagem, familia=familia, usuario_id=auth.usuario_atual.id)
             sessao.add(novo)
             sessao.commit()
         await self.carregar_dados()
@@ -187,19 +196,79 @@ class EstadoCadastro(rx.State):
                 reg.nome_completo = form_data.get("nome_completo")
                 reg.vinculo = self.vinculo_selecionado
                 reg.linhagem = form_data.get("linhagem", "Não aplicável")
+                reg.familia = form_data.get("familia", "Minha Família")
                 sessao.add(reg)
                 sessao.commit()
         self.modal_edicao_aberto = False
         await self.carregar_dados()
         yield rx.toast.success("Atualizado!")
 
+    def ordenar_espiritos(self, lista: list[Antepassado], user: Usuario) -> list[Antepassado]:
+        # Prioridades de Vínculo conforme as regras
+        prioridade_vinculo = {
+            "Tataravô": 1, "Tataravó": 1,
+            "Bisavô": 2, "Bisavó": 2,
+            "Avô": 3, "Avó": 3,
+            "Pai": 4, "Mãe": 5,
+            "Cônjuge": 6,
+            "Filho(a)": 7,
+            "Neto(a)": 8,
+            "Bisneto(a)": 9,
+            "Tio-avô": 10, "Tia-avó": 10,
+            "Tio": 11, "Tia": 11,
+            "Irmão": 12, "Irmã": 12,
+            "Sobrinho(a)": 13,
+            "Primo": 14, "Prima": 14,
+            "Sogro": 15, "Sogra": 15, "Cunhado(a)": 15, "Padrasto": 15, "Madrasta": 15, "Enteado(a)": 15, "Parente afim": 15,
+            "Amigo(a)": 16,
+            "Outro": 17
+        }
+        
+        # Prioridade de Linhagem: Paterna -> Materna
+        prioridade_linhagem = {"Paterna": 1, "Materna": 2, "Não aplicável": 3}
+        
+        # Regra de Acoplamento: Marido primeiro
+        # Se o usuário for Masculino, "Minha Família" é do marido.
+        # Se o usuário for Feminino, "Família do Cônjuge" é do marido.
+        prioridade_familia = {}
+        if user.sexo == "Masculino":
+            prioridade_familia = {"Minha Família": 1, "Família do Cônjuge": 2}
+        else:
+            prioridade_familia = {"Família do Cônjuge": 1, "Minha Família": 2}
+
+        def chave_ordenacao(ant: Antepassado):
+            # 1. Família (Marido antes de Esposa)
+            p_fam = prioridade_familia.get(ant.familia, 3)
+            # 2. Vínculo (Ancestrais -> Descendentes -> Colaterais)
+            p_vin = prioridade_vinculo.get(ant.vinculo, 99)
+            # 3. Linhagem (Paterna antes de Materna) dentro de cada nível
+            p_lin = prioridade_linhagem.get(ant.linhagem, 3)
+            
+            return (p_fam, p_vin, p_lin)
+
+        return sorted(lista, key=chave_ordenacao)
+
     async def exportar_pdf(self):
-            print("--- Chamada de exportar_pdf iniciada (memória com coordenadas reais) ---")
+            print("--- Chamada de exportar_pdf iniciada com nova ordenação ---")
             from .projeto_messianica import AuthState
             from reportlab.pdfgen import canvas
             import io
             auth = await self.get_state(AuthState)
             user = auth.usuario_atual
+
+            # Validação de abreviações e abortos
+            avisos = []
+            for ant in self.lista_antepassados:
+                if "." in ant.nome_completo:
+                    avisos.append(f"Aviso: O nome '{ant.nome_completo}' parece conter abreviações. Por favor, corrija para o nome completo.")
+                if "aborto" in ant.nome_completo.lower():
+                    avisos.append(f"ALERTA CRÍTICO: Menção de 'aborto' encontrada em '{ant.nome_completo}'. Consulte o ministro ou coordenador responsável para a normativa correta.")
+
+            if avisos:
+                for aviso in avisos:
+                    yield rx.toast.warning(aviso)
+
+            lista_ordenada = self.ordenar_espiritos(self.lista_antepassados, user)
 
             buffer = io.BytesIO()
             try:
@@ -208,12 +277,10 @@ class EstadoCadastro(rx.State):
                 if os.path.exists(image_path):
                     c.drawImage(image_path, 0, 0, width=210*mm, height=297*mm, preserveAspectRatio=True)
 
-                # --- DADOS DO RODAPÉ (Coordenadas Gemini Web) ---
                 c.setFont("Helvetica", 9)
                 data_hoje = datetime.now().strftime("%d/%m/%Y")
                 hora_atual = datetime.now().strftime("%H:%M:%S")
 
-                # Cálculo dinâmico do centro da página
                 largura_a4, altura_a4 = A4
                 centro_x = largura_a4 / 2.0
 
@@ -223,30 +290,26 @@ class EstadoCadastro(rx.State):
                 c.drawCentredString(centro_x, 20*mm, f"{cidade}, 02 de novembro de {ano_atual}") 
 
                 c.setFont("Helvetica", 9)
-                c.drawString(20*mm, 15*mm, f"Nome: {user.nome_real} {user.sobrenome}")
+                c.drawString(20*mm, 15*mm, f"Nome: {user.nome_real} {user.sobrenome} ({user.estado_civil})")
                 c.drawString(20*mm, 10*mm, f"Igreja: {user.igreja}")
                 c.drawString(20*mm, 5*mm, f"Enviado em {data_hoje} às {hora_atual}")
 
-
                 c.drawRightString(195*mm, 5*mm, "Página 1/1")
 
-                # --- CORPO DA TABELA (Lista Dinâmica) ---
                 c.setFont("Helvetica-Bold", 10)
-                # Cabeçalhos da tabela (conforme sugerido)
                 c.drawString(20*mm, 218*mm, "Nome Espírito/Família")
-                c.drawString(140*mm, 218*mm, "Parentesco / Linhagem")
+                c.drawString(140*mm, 218*mm, "Parentesco / Linhagem / Família")
                 
                 c.setFont("Helvetica", 10)
-                y_pos = 205*mm # Início da primeira linha de dados
+                y_pos = 205*mm 
                 
-                for ant in self.lista_antepassados:
-                    # Se a lista for muito grande, evita escrever sobre o rodapé
+                for ant in lista_ordenada:
                     if y_pos < 60*mm:
                         break 
                         
                     c.drawString(20*mm, y_pos, ant.nome_completo)
-                    c.drawString(140*mm, y_pos, f"{ant.vinculo} ({ant.linhagem})")
-                    y_pos -= 6*mm # Espaçamento entre linhas sugerido
+                    c.drawString(140*mm, y_pos, f"{ant.vinculo} ({ant.linhagem}) - {ant.familia}")
+                    y_pos -= 6*mm 
 
                 c.save()
                 pdf_data = buffer.getvalue()
@@ -256,11 +319,9 @@ class EstadoCadastro(rx.State):
                 yield rx.toast.error(f"Ocorreu um erro ao gerar o PDF.")
                 return
             
-            # Gera o nome de arquivo dinâmico
             timestamp = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
             nome_arquivo = f"{user.nome_real}_{user.sobrenome}_{timestamp}.pdf".replace(" ", "_").replace(":", "-")
 
-            print(f"Disparando download: {nome_arquivo}")
             yield rx.download(data=pdf_data, filename=nome_arquivo)
 
 
