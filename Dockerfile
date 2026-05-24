@@ -20,33 +20,27 @@ RUN pip install -r requirements.txt
 # Roteamento Inteligente: O Caddy entrega a interface (HTML) de imediato e protege o Backend
 RUN echo ":8080 {" > Caddyfile && \
     echo "    encode gzip" >> Caddyfile && \
-    echo "    @backend path /_event* /ping* /_upload*" >> Caddyfile && \
+    echo "    @backend path /auth* /antepassados* /usuarios* /ping* /docs* /openapi.json*" >> Caddyfile && \
     echo "    handle @backend {" >> Caddyfile && \
     echo "        reverse_proxy 127.0.0.1:8000" >> Caddyfile && \
     echo "    }" >> Caddyfile && \
     echo "    handle {" >> Caddyfile && \
-    echo "        root * /app/frontend_static" >> Caddyfile && \
-    echo "        try_files {path} {path}.html {path}/ /404.html" >> Caddyfile && \
+    echo "        root * /app/Frontend/dist" >> Caddyfile && \
+    echo "        try_files {path} {path}.html {path}/ /index.html" >> Caddyfile && \
     echo "        file_server" >> Caddyfile && \
     echo "    }" >> Caddyfile && \
     echo "}" >> Caddyfile
 
-# Otimizações Extremas de Memória
+# Compila o Frontend (React)
+RUN cd Frontend && npm install && npm run build
+
+# Otimizações de Memória
 ENV NODE_OPTIONS="--max-old-space-size=128"
 ENV MALLOC_ARENA_MAX=2
 ENV PYTHONUNBUFFERED=1
 
-# Inicializa o Reflex e compila a "Pele" do site
-RUN reflex init
-RUN reflex export --frontend-only --no-zip
-
-# Proteção de Versões: Copia a interface gerada para uma pasta segura, independentemente da versão do Reflex
-RUN mkdir -p /app/frontend_static && \
-    cp -r /app/.web/build/client/* /app/frontend_static/ 2>/dev/null || \
-    cp -r /app/.web/_static/* /app/frontend_static/ 2>/dev/null || true
-
 # Porta principal que o Render vai escutar
 EXPOSE 8080
 
-# Inicia APENAS o backend do Reflex e liga o Caddy
-CMD reflex db migrate && reflex run --env prod --backend-only & caddy run --config Caddyfile
+# Inicia o backend do FastAPI e liga o Caddy
+CMD uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 & caddy run --config Caddyfile
