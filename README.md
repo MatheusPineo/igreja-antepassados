@@ -44,3 +44,4 @@ O frontend ficará disponível em `http://localhost:8080` (conforme configurado 
 - **Gestão de Antepassados**: CRUD completo de registros.
 - **Exportação de PDF**: Geração de formulário PDF formatado com base nos registros do usuário.
 - **Design Moderno**: Interface responsiva e elegante baseada no sistema de design da Igreja Messiânica.
+- **Infraestrutura**: Rota de aquecimento `/ping` (Keep-Alive) que realiza uma consulta levíssima (`SELECT 1`) no banco de dados para evitar a hibernação dos servidores Render e bancos serverless (Supabase/Neon).

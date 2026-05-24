@@ -28,3 +28,15 @@ app.include_router(usuarios.router, prefix="/usuarios", tags=["usuarios"])
 @app.get("/")
 def read_root():
     return {"message": "Bem-vindo à API da Igreja Messiânica"}
+
+@app.get("/ping")
+def ping():
+    """Endpoint público leve que realiza uma consulta rápida no banco para manter a infraestrutura ativa."""
+    from sqlalchemy import text
+    from fastapi.responses import PlainTextResponse
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return PlainTextResponse("ok", status_code=200)
+    except Exception as e:
+        return PlainTextResponse(f"error: {str(e)}", status_code=500)
