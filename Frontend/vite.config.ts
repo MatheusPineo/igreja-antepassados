@@ -10,6 +10,12 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/auth": "http://127.0.0.1:8000",
+      "/antepassados": "http://127.0.0.1:8000",
+      "/usuarios": "http://127.0.0.1:8000",
+      "/ping": "http://127.0.0.1:8000",
+    }
   },
   plugins: [react()],
   resolve: {
