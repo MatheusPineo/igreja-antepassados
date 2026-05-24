@@ -16,9 +16,13 @@ app.add_middleware(
 )
 
 # Criar tabelas ao iniciar (simples para este projeto)
+# No Vercel, eventos on_startup podem não disparar de forma confiável no adaptador ASGI.
+# Vamos garantir a criação das tabelas no import ou na conexão.
+SQLModel.metadata.create_all(engine)
+
 @app.on_event("startup")
 def on_startup():
-    SQLModel.metadata.create_all(engine)
+    pass
 
 # Inclusão das rotas
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
