@@ -1,10 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .api.endpoints import auth, antepassados, usuarios
 from .core.database import engine
 from sqlmodel import SQLModel
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Igreja Messiânica - API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server connection error"}
+    )
 
 # Configuração de CORS
 app.add_middleware(
