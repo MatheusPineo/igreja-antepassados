@@ -16,7 +16,11 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "983253662992-bqhudth57f6kq9cdu
 def google_auth(token_data: dict, session: Session = Depends(get_session)):
     token = token_data.get("credential")
     try:
-        idinfo = id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID)
+        try:
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID)
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Token do Google inválido")
+            
         google_id = idinfo['sub']
         email = idinfo['email']
         name = idinfo.get('name', '')
@@ -51,8 +55,11 @@ def google_auth(token_data: dict, session: Session = Depends(get_session)):
                 "tipo_usuario": user.tipo_usuario
             }
         }
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Token do Google inválido")
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Erro interno de conexão com o banco de dados: " + str(e))
 
 @router.post("/login")
 def login(data: dict, session: Session = Depends(get_session)):
