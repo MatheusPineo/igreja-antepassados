@@ -15,7 +15,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server connection error"}
+        content={"detail": "Internal server connection error"},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 # Configuração de CORS
