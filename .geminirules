@@ -1,19 +1,23 @@
 # Regras e Memória do Projeto
 
-MEMÓRIA DE DESENVOLVIMENTO E STATUS
+## REGRAS GLOBAIS DE ENGENHARIA (NUNCA IGNORE)
+- **Deploy Contínuo Front-End**: Sempre que alterar o frontend, faça o deploy via Vercel utilizando o comando `vercel --prod --yes` restrito à pasta `Frontend/`.
+- **Deploy Contínuo Back-End**: Sempre que alterar o backend, faça commit e push para a branch `main` do GitHub para acionar o Auto-Deploy do Render.
+- **Governança de Documentação**: Sempre atualize README.md, ARCHITECTURE.md, CHANGELOG.md e VitePress (docs/) após alterações funcionais.
+- **Testes**: Sempre execute a suíte de validações automatizadas (`npx tsc --noEmit` no frontend e validações/testes equivalentes no backend) garantindo a luz verde antes do deploy.
+- **Idioma**: Responda estritamente em Português do Brasil (pt-BR).
+
+## MEMÓRIA DE DESENVOLVIMENTO E STATUS
 
 - **Projeto**: Sistema de Gestão de Antepassados (Igreja Messiânica Mundial de Portugal)
 - **Stack Tecnológica**:
   - Backend: FastAPI, SQLModel (Python 3.11+)
   - Frontend: React, Vite, TypeScript, Tailwind CSS, Shadcn/UI
-  - Infraestrutura: Docker Multi-stage, Caddy, Vercel, Supabase/Neon
-- **Estado Atual**:
-  - Autenticação agora utiliza **JWT (JSON Web Tokens)** via `OAuth2PasswordBearer` e hashing avançado com **Bcrypt** (`passlib`).
-  - Todas as rotas (antepassados, usuários, etc.) estão devidamente blindadas com injeção de dependência (`get_current_user`), extinguindo antigas vulnerabilidades de **IDOR** associadas à passagem de IDs via URL.
-  - Implementado motor de geração de PDF (ReportLab puro, em memória com `BytesIO`) para a emissão dos formulários oficiais.
-- **Documentação**:
-  - `README.md`, `ARCHITECTURE.md` e `CHANGELOG.md` atualizados para refletir as melhorias arquiteturais no núcleo de segurança e exportação.
-  - Guias de usuário criados no VitePress (`docs/changelog/novidades.md`).
+  - Infraestrutura: Docker Multi-stage, Vercel (Front-end), Render (Back-end), Supabase/PostgreSQL (DB)
+- **Últimas Alterações e Estado Atual (Versão 1.1.0)**:
+  - Migração de Banco de Dados: Criado script (`migrate_local_to_supabase.py`) e migrado o banco SQLite (`reflex.db`) com sucesso para Supabase PostgreSQL (usuários e 64 antepassados preservados).
+  - Backend Blindado (Render): Otimizado Pool do SQLAlchemy (`pool_size`, `timeout`). Implementado `Global Exception Middleware` para impedir crashes (erro 502 HTML). Endpoint `/auth/google` aprimorado com tratamento de falhas transacionais rígido e injeção de CORS Headers (COOP).
+  - Frontend Otimizado (Vercel): Configurado `Frontend/vercel.json` de modo estrito e segregado para isolar compilações exclusivas do framework Vite, impedindo falsos-positivos serverless com Python. Inicializador de Google Login forçado com `ux_mode="popup"` desativando OneTap/FedCM para suprimir restrições em comunicação postMessage.
 - **Próximos Passos (Possíveis)**:
   - Adicionar testes E2E no frontend com Playwright ou Cypress.
   - Implementar rate limiting nas rotas de login para prevenir brute force.

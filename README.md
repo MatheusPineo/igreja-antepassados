@@ -1,48 +1,56 @@
-# Projeto Messianica - Nova Arquitetura (React + FastAPI)
+# Projeto Messianica - Sistema de Gestão de Antepassados
 
-Este projeto foi migrado de uma arquitetura baseada em Reflex para uma stack moderna desacoplada.
+Este projeto foi desenhado sob uma arquitetura moderna e desacoplada, separando Backend e Frontend.
 
-## Estrutura
+## Links de Produção
+- **Frontend (Interface do Usuário)**: [https://projetomessianica.vercel.app](https://projetomessianica.vercel.app) (Hospedado na Vercel)
+- **Backend (API)**: Hospedado no Render (Auto-Deploy via GitHub).
+- **Banco de Dados**: Hospedado no Supabase (PostgreSQL).
 
-- `backend/`: Servidor API construído com **FastAPI** e **SQLModel**.
-- `Frontend/`: Aplicação web moderna construída com **React**, **Vite**, **TypeScript**, **Tailwind CSS** e **Shadcn/UI**.
-- `reflex.db`: Banco de dados SQLite compartilhado.
+## Como Instalar e Rodar Localmente
 
-## Como Executar
+### 1. Configurar Variáveis de Ambiente (.env)
+Você precisará de um arquivo `.env` configurado.
 
-### 1. Backend (API)
+**Backend (raiz do projeto):**
+```env
+DATABASE_URL=postgresql://postgres:sua_senha_aqui@db.url-do-supabase.co:5432/postgres
+GOOGLE_CLIENT_ID=seu-google-client-id
+SECRET_KEY=sua-chave-secreta-do-jwt
+```
 
-Certifique-se de ter o Python instalado. Recomenda-se usar um ambiente virtual.
+**Frontend (`Frontend/.env`):**
+```env
+VITE_API_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=seu-google-client-id
+```
 
+### 2. Backend (FastAPI API)
+Abra um terminal na raiz do projeto. Recomenda-se utilizar o ambiente virtual Python.
 ```bash
-# Instalar dependências
+# Instalar as dependências do Python
 pip install -r requirements.txt
 
-# Iniciar o servidor
+# Iniciar o servidor backend localmente
 python run.py
 ```
-O backend ficará disponível em `http://localhost:8000`.
+A API ficará disponível em `http://localhost:8000`.
 
-### 2. Frontend (React)
-
-Navegue até a pasta do frontend e instale as dependências usando Bun (recomendado) ou NPM.
-
+### 3. Frontend (React / Vite)
+Abra **um novo terminal** e navegue até a pasta do Frontend.
 ```bash
 cd Frontend
 
-# Instalar dependências
-bun install # ou npm install
+# Instalar as dependências do Node
+npm install
 
-# Iniciar o ambiente de desenvolvimento
-bun dev # ou npm run dev
+# Iniciar o servidor de desenvolvimento
+npm run dev
 ```
-O frontend ficará disponível em `http://localhost:8080` (conforme configurado no `vite.config.ts`).
+O Frontend estará rodando em `http://localhost:8080`.
 
-## Funcionalidades
-
-- **Autenticação Segura (JWT + Bcrypt)**: Login e Cadastro totalmente integrados ao banco de dados com sessões protegidas por JSON Web Tokens (OAuth2) e senhas criptografadas com Bcrypt.
-- **Autorização Robusta**: Proteção contra vulnerabilidades IDOR, garantindo que usuários só acessem e modifiquem os próprios dados de linhagem genealógica.
-- **Gestão de Antepassados**: CRUD completo de registros, blindado contra acessos indevidos.
-- **Exportação de PDF**: Geração de formulário PDF formatado com base nos registros do usuário. Otimizado utilizando `ReportLab` com geração diretamente em buffer na memória (`BytesIO`) para prevenir erros OOM (Out-Of-Memory) no servidor (limite de 512MB RAM).
-- **Design Moderno**: Interface responsiva e elegante baseada no sistema de design da Igreja Messiânica.
-- **Infraestrutura**: Rota de aquecimento `/ping` (Keep-Alive) que realiza uma consulta levíssima (`SELECT 1`) no banco de dados para evitar a hibernação dos servidores Render e bancos serverless (Supabase/Neon).
+## Principais Funcionalidades
+- **Autenticação Segura (JWT + Bcrypt + OAuth2)**: Sessões protegidas e seguras integradas ao banco.
+- **Autorização Robusta**: Proteção Ativa contra ataques IDOR (Insecure Direct Object References).
+- **Gestão de Dados**: CRUD completo gerenciado de ponta-a-ponta por um cliente blindado contra falhas transacionais.
+- **Exportação de PDF em Memória**: Sistema ultraleve de emissão de formulários oficiais sem estouros de memória.
