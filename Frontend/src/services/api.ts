@@ -76,10 +76,30 @@ export const api = {
     return this.handleResponse(response);
   },
   async handleResponse(response: Response) {
+    const contentType = response.headers.get("content-type");
+    const isJson = contentType && contentType.includes("application/json");
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Erro na requisição");
+      if (isJson) {
+        const error = await response.json();
+        throw new Error(error.detail || "Erro na requisição");
+      }
+      throw new Error("Erro na requisição (Resposta inválida do servidor)");
     }
-    return response.json();
+
+    if (!isJson) {
+      throw new Error("Server returned an invalid or empty response");
+    }
+
+    const text = await response.text();
+    if (!text) {
+      throw new Error("Server returned an invalid or empty response");
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      throw new Error("Server returned an invalid or empty response");
+    }
   }
 };
