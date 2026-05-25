@@ -8,6 +8,10 @@ from ...core.database import get_session
 from ...core.security import verify_password, get_password_hash, create_access_token
 from ...models.usuario import Usuario
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "983253662992-bqhudth57f6kq9cdu2s7kli29t23rb5h.apps.googleusercontent.com")
@@ -15,15 +19,21 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "983253662992-bqhudth57f6kq9cdu
 @router.post("/google")
 def google_auth(token_data: dict, session: Session = Depends(get_session)):
     token = token_data.get("credential")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token não fornecido")
+
     try:
         try:
             idinfo = id_token.verify_oauth2_token(token, requests.Request(), GOOGLE_CLIENT_ID)
         except ValueError:
             raise HTTPException(status_code=401, detail="Token do Google inválido")
             
-        google_id = idinfo['sub']
-        email = idinfo['email']
+        google_id = idinfo.get('sub')
+        email = idinfo.get('email')
         name = idinfo.get('name', '')
+
+        if not google_id or not email:
+            raise HTTPException(status_code=400, detail="O token do Google não contém as informações necessárias (email/sub)")
 
         user = session.exec(select(Usuario).where(Usuario.google_id == google_id)).first()
         if not user:
@@ -59,7 +69,8 @@ def google_auth(token_data: dict, session: Session = Depends(get_session)):
         raise
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail="Erro interno de conexão com o banco de dados: " + str(e))
+        logger.error(f"Google Auth Database Crash: {str(e)}")
+        raise HTTPException(status_code=503, detail="Database connection failed. Please check backend infrastructure logs.")
 
 @router.post("/login")
 def login(data: dict, session: Session = Depends(get_session)):
