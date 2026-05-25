@@ -264,8 +264,11 @@ const Index = () => {
             <div className="flex justify-center">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Falha na autenticação com Google")}
-                useOneTap
+                onError={() => {
+                  console.error("O script do Google Identity abortou a operação.");
+                  toast.error("O login com Google foi interrompido. Verifique se os pop-ups estão bloqueados no seu navegador.");
+                }}
+                useOneTap={false}
                 theme="outline"
                 shape="pill"
                 locale="pt_PT"
