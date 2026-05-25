@@ -9,45 +9,64 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 
 from ...core.database import get_session
+from ...core.security import get_current_user
 from ...models.usuario import Usuario
 from ...models.antepassado import Antepassado
 
 router = APIRouter()
 
-@router.get("/{usuario_id}", response_model=List[Antepassado])
-def list_antepassados(usuario_id: int, session: Session = Depends(get_session)):
+@router.get("/", response_model=List[Antepassado])
+def list_antepassados(
+    session: Session = Depends(get_session),
+    current_user: Usuario = Depends(get_current_user)
+):
     try:
-        antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == usuario_id)).all()
+        antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == current_user.id)).all()
         return antepassados
     except Exception as e:
         raise e
 
 @router.post("/")
-def create_antepassado(data: Antepassado, session: Session = Depends(get_session)):
+def create_antepassado(
+    data: Antepassado,
+    session: Session = Depends(get_session),
+    current_user: Usuario = Depends(get_current_user)
+):
     if data.vinculo in ["Amigo", "Amiga", "Outro"]:
         data.linhagem = "Não aplicável"
         data.familia = "Não aplicável"
+        
+    data.usuario_id = current_user.id
     session.add(data)
     session.commit()
     session.refresh(data)
     return data
 
 @router.delete("/{id}")
-def delete_antepassado(id: int, session: Session = Depends(get_session)):
+def delete_antepassado(
+    id: int,
+    session: Session = Depends(get_session),
+    current_user: Usuario = Depends(get_current_user)
+):
     item = session.get(Antepassado, id)
     if not item:
         raise HTTPException(status_code=404, detail="Não encontrado")
+    
+    if item.usuario_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Não autorizado a excluir este registro")
+        
     session.delete(item)
     session.commit()
     return {"message": "Removido"}
 
-@router.get("/exportar-pdf/{usuario_id}")
-def export_pdf(usuario_id: int, session: Session = Depends(get_session)):
-    user = session.get(Usuario, usuario_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+@router.get("/exportar-pdf")
+def export_pdf(
+    session: Session = Depends(get_session),
+    current_user: Usuario = Depends(get_current_user)
+):
+    user = current_user
     
-    antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == usuario_id)).all()
+    antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == user.id)).all()
     
     hierarquia = [
         "Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", "Pai", "Mãe", "Cônjuge",

@@ -1,0 +1,19 @@
+# Regras e Memória do Projeto
+
+MEMÓRIA DE DESENVOLVIMENTO E STATUS
+
+- **Projeto**: Sistema de Gestão de Antepassados (Igreja Messiânica Mundial de Portugal)
+- **Stack Tecnológica**:
+  - Backend: FastAPI, SQLModel (Python 3.11+)
+  - Frontend: React, Vite, TypeScript, Tailwind CSS, Shadcn/UI
+  - Infraestrutura: Docker Multi-stage, Caddy, Vercel, Supabase/Neon
+- **Estado Atual**:
+  - Autenticação agora utiliza **JWT (JSON Web Tokens)** via `OAuth2PasswordBearer` e hashing avançado com **Bcrypt** (`passlib`).
+  - Todas as rotas (antepassados, usuários, etc.) estão devidamente blindadas com injeção de dependência (`get_current_user`), extinguindo antigas vulnerabilidades de **IDOR** associadas à passagem de IDs via URL.
+  - Implementado motor de geração de PDF (ReportLab puro, em memória com `BytesIO`) para a emissão dos formulários oficiais.
+- **Documentação**:
+  - `README.md`, `ARCHITECTURE.md` e `CHANGELOG.md` atualizados para refletir as melhorias arquiteturais no núcleo de segurança e exportação.
+  - Guias de usuário criados no VitePress (`docs/changelog/novidades.md`).
+- **Próximos Passos (Possíveis)**:
+  - Adicionar testes E2E no frontend com Playwright ou Cypress.
+  - Implementar rate limiting nas rotas de login para prevenir brute force.

@@ -40,8 +40,9 @@ O frontend ficará disponível em `http://localhost:8080` (conforme configurado 
 
 ## Funcionalidades
 
-- **Autenticação**: Login e Cadastro integrados ao banco de dados existente.
-- **Gestão de Antepassados**: CRUD completo de registros.
-- **Exportação de PDF**: Geração de formulário PDF formatado com base nos registros do usuário.
+- **Autenticação Segura (JWT + Bcrypt)**: Login e Cadastro totalmente integrados ao banco de dados com sessões protegidas por JSON Web Tokens (OAuth2) e senhas criptografadas com Bcrypt.
+- **Autorização Robusta**: Proteção contra vulnerabilidades IDOR, garantindo que usuários só acessem e modifiquem os próprios dados de linhagem genealógica.
+- **Gestão de Antepassados**: CRUD completo de registros, blindado contra acessos indevidos.
+- **Exportação de PDF**: Geração de formulário PDF formatado com base nos registros do usuário. Otimizado utilizando `ReportLab` com geração diretamente em buffer na memória (`BytesIO`) para prevenir erros OOM (Out-Of-Memory) no servidor (limite de 512MB RAM).
 - **Design Moderno**: Interface responsiva e elegante baseada no sistema de design da Igreja Messiânica.
 - **Infraestrutura**: Rota de aquecimento `/ping` (Keep-Alive) que realiza uma consulta levíssima (`SELECT 1`) no banco de dados para evitar a hibernação dos servidores Render e bancos serverless (Supabase/Neon).

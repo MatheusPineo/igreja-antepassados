@@ -29,6 +29,7 @@ const Index = () => {
     try {
       const data = await api.googleAuth(credentialResponse.credential);
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.access_token);
       toast.success("Login com Google realizado!");
       navigate("/dashboard");
     } catch (error: any) {
@@ -44,6 +45,7 @@ const Index = () => {
       if (isLogin) {
         const data = await api.login({ email, password });
         localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.access_token);
         toast.success("Bem-vindo!");
         navigate("/dashboard");
       } else {
@@ -51,14 +53,16 @@ const Index = () => {
           toast.error("As senhas não coincidem");
           return;
         }
-        await api.register({ 
+        const data = await api.register({ 
           email, 
           password, 
           nome_completo: email.split('@')[0],
           aceitou_termos: true 
         });
-        toast.success("Conta criada! Por favor, faça login.");
-        setMode("login");
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.access_token);
+        toast.success("Conta criada! Bem-vindo!");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast.error(error.message);

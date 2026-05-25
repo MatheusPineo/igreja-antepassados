@@ -10,3 +10,5 @@ httpx==0.28.1
 reflex
 google-auth
 requests
+passlib[bcrypt]
+PyJWT

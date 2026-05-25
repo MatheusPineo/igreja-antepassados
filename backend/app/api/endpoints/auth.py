@@ -1,19 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-import hashlib
 import os
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
 from ...core.database import get_session
+from ...core.security import verify_password, get_password_hash, create_access_token
 from ...models.usuario import Usuario
 
 router = APIRouter()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "983253662992-bqhudth57f6kq9cdu2s7kli29t23rb5h.apps.googleusercontent.com")
-
-def hash_password(password: str):
-    return hashlib.sha256(password.encode()).hexdigest()
 
 @router.post("/google")
 def google_auth(token_data: dict, session: Session = Depends(get_session)):
@@ -40,7 +37,11 @@ def google_auth(token_data: dict, session: Session = Depends(get_session)):
             session.commit()
             session.refresh(user)
 
+        access_token = create_access_token(data={"sub": str(user.id)})
+
         return {
+            "access_token": access_token,
+            "token_type": "bearer",
             "user": {
                 "id": user.id,
                 "nome_completo": user.nome_completo,
@@ -58,9 +59,15 @@ def login(data: dict, session: Session = Depends(get_session)):
     email = data.get("email")
     senha = data.get("password")
     user = session.exec(select(Usuario).where(Usuario.email == email)).first()
-    if not user or user.senha_hash != hash_password(senha):
+    
+    if not user or not verify_password(senha, user.senha_hash):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
+        
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
     return {
+        "access_token": access_token,
+        "token_type": "bearer",
         "user": {
             "id": user.id,
             "nome_completo": user.nome_completo,
@@ -82,10 +89,24 @@ def register(data: dict, session: Session = Depends(get_session)):
     user = Usuario(
         nome_completo=data.get("nome_completo"),
         email=email,
-        senha_hash=hash_password(data.get("password")),
+        senha_hash=get_password_hash(data.get("password")),
         aceitou_termos=data.get("aceitou_termos", True)
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    return {"message": "Usuário criado com sucesso"}
+    
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "nome_completo": user.nome_completo,
+            "email": user.email,
+            "nome_real": user.nome_real,
+            "igreja": user.igreja,
+            "tipo_usuario": user.tipo_usuario
+        }
+    }

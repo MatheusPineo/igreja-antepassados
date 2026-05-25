@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { Pencil, Trash2, FileDown, LogOut, Save, Moon, Sun, UserCircle, LayoutDashboard, Heart, BookOpen, Gift, MessageSquare, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,10 +89,9 @@ const Dashboard = () => {
   const [bond, setBond] = useState<string>("");
   const [lineage, setLineage] = useState<Lineage>("Paterna");
   const [family, setFamily] = useState<Family>("Minha Família");
-  const [records, setRecords] = useState<Antepassado[]>([]);
-  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const allowedAncestors = [
     "Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", 
@@ -114,79 +114,87 @@ const Dashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
     setEditUser(parsedUser);
-    loadRecords(parsedUser.id);
   }, [navigate]);
 
-  const loadRecords = async (userId: number) => {
-    try {
-      const data = await api.listAntepassados(userId);
-      setRecords(data);
-    } catch (error: any) {
-      toast.error("Erro ao carregar registros: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: records = [], isLoading: loading } = useQuery({
+    queryKey: ['antepassados'],
+    queryFn: () => api.listAntepassados(),
+    enabled: !!user,
+  });
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    try {
-      const updated = await api.updateUsuario(user.id, editUser);
+  const updateProfileMutation = useMutation({
+    mutationFn: (userData: Partial<Usuario>) => api.updateUsuario(userData),
+    onSuccess: (updated) => {
       setUser(updated);
       localStorage.setItem("user", JSON.stringify(updated));
       setIsEditOpen(false);
       toast.success("Perfil atualizado!");
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast.error("Erro ao atualizar perfil: " + error.message);
     }
+  });
+
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    updateProfileMutation.mutate(editUser);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!spirit.trim() || !bond || !user) {
-        toast.error("Preencha o nome e o vínculo");
-        return;
-    }
-
-    try {
-      const newRecord = await api.createAntepassado({
-        nome_completo: spirit.trim(),
-        vinculo: bond,
-        linhagem: lineage,
-        familia: family,
-        usuario_id: user.id
-      });
-      setRecords((prev) => [newRecord, ...prev]);
+  const createMutation = useMutation({
+    mutationFn: (newRecord: any) => api.createAntepassado(newRecord),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['antepassados'] });
       setSpirit("");
       setBond("");
       setLineage("Paterna");
       setFamily("Minha Família");
       toast.success("Registro salvo!");
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast.error("Erro ao salvar: " + error.message);
     }
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!spirit.trim() || !bond || !user) {
+        toast.error("Preencha o nome e o vínculo");
+        return;
+    }
+    createMutation.mutate({
+      nome_completo: spirit.trim(),
+      vinculo: bond,
+      linhagem: lineage,
+      familia: family,
+    } as Antepassado);
   };
 
-  const handleDelete = async (id?: number) => {
-    if (!id) return;
-    try {
-      await api.deleteAntepassado(id);
-      setRecords((prev) => prev.filter((r) => r.id !== id));
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.deleteAntepassado(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['antepassados'] });
       toast.success("Registro removido");
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast.error("Erro ao remover: " + error.message);
     }
+  });
+
+  const handleDelete = (id?: number) => {
+    if (!id) return;
+    deleteMutation.mutate(id);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/");
   };
 
   const handleExportPDF = () => {
     if (!user) return;
-    window.open(api.getExportUrl(user.id), "_blank");
+    window.open(api.getExportUrl(), "_blank");
   };
 
   // Atualiza valores quando o vínculo muda

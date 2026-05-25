@@ -2,6 +2,15 @@ import { Usuario, Antepassado } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
+const getHeaders = () => {
+  const token = localStorage.getItem("token");
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const api = {
   // Auth
   async login(data: any) {
@@ -15,8 +24,8 @@ export const api = {
   },
 
   // Antepassados
-  async listAntepassados(usuarioId: number): Promise<Antepassado[]> {
-    return this.get(`/antepassados/${usuarioId}`);
+  async listAntepassados(): Promise<Antepassado[]> {
+    return this.get(`/antepassados/`);
   },
   async createAntepassado(data: Antepassado): Promise<Antepassado> {
     return this.post("/antepassados/", data);
@@ -24,35 +33,37 @@ export const api = {
   async deleteAntepassado(id: number) {
     return this.delete(`/antepassados/${id}`);
   },
-  getExportUrl(usuarioId: number) {
-    return `${API_URL}/antepassados/exportar-pdf/${usuarioId}`;
+  getExportUrl() {
+    return `${API_URL}/antepassados/exportar-pdf`;
   },
 
   // Usuários
-  async getUsuario(id: number): Promise<Usuario> {
-    return this.get(`/usuarios/${id}`);
+  async getUsuario(): Promise<Usuario> {
+    return this.get(`/usuarios/me`);
   },
-  async updateUsuario(id: number, data: Partial<Usuario>): Promise<Usuario> {
-    return this.put(`/usuarios/${id}`, data);
+  async updateUsuario(data: Partial<Usuario>): Promise<Usuario> {
+    return this.put(`/usuarios/me`, data);
   },
 
   // Generic methods
   async post(endpoint: string, data: any) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return this.handleResponse(response);
   },
   async get(endpoint: string) {
-    const response = await fetch(`${API_URL}${endpoint}`);
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      headers: getHeaders(),
+    });
     return this.handleResponse(response);
   },
   async put(endpoint: string, data: any) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return this.handleResponse(response);
@@ -60,6 +71,7 @@ export const api = {
   async delete(endpoint: string) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
     return this.handleResponse(response);
   },
