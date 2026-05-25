@@ -1,0 +1,7 @@
+{
+  "name": "projeto-messianica-root",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm --prefix Frontend run build"
+  }
+}
