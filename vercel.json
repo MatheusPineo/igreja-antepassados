@@ -1,16 +1,21 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix Frontend install && npm --prefix Frontend run build",
-  "outputDirectory": "Frontend/dist",
-  "headers": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin-allow-popups"
-        }
-      ]
+      "src": "Frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "Frontend/index.html"
     }
   ]
 }
