@@ -1,6 +1,6 @@
 import { Usuario, Antepassado } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_API_URL || "https://igreja-antepassados.onrender.com";
 
 const getHeaders = () => {
   const token = localStorage.getItem("token");
