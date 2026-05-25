@@ -27,6 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_coop_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    return response
+
 # Criar tabelas ao iniciar (simples para este projeto)
 # No Vercel, eventos on_startup podem não disparar de forma confiável no adaptador ASGI.
 # Vamos garantir a criação das tabelas no import ou na conexão.

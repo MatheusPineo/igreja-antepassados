@@ -269,6 +269,7 @@ const Index = () => {
                   toast.error("O login com Google foi interrompido. Verifique se os pop-ups estão bloqueados no seu navegador.");
                 }}
                 useOneTap={false}
+                ux_mode="popup"
                 theme="outline"
                 shape="pill"
                 locale="pt_PT"

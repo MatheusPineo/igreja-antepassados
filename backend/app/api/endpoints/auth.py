@@ -69,8 +69,9 @@ def google_auth(token_data: dict, session: Session = Depends(get_session)):
         raise
     except Exception as e:
         session.rollback()
+        print(f"CRITICAL ERROR IN AUTH GOOGLE: {e}", flush=True)
         logger.error(f"Google Auth Database Crash: {str(e)}")
-        raise HTTPException(status_code=503, detail="Database connection failed. Please check backend infrastructure logs.")
+        raise HTTPException(status_code=500, detail="DB_CRASH")
 
 @router.post("/login")
 def login(data: dict, session: Session = Depends(get_session)):
