@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,17 +25,7 @@ const Index = () => {
 
   const isLogin = mode === "login";
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    try {
-      const data = await api.googleAuth(credentialResponse.credential);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.access_token);
-      toast.success("Login com Google realizado!");
-      navigate("/dashboard");
-    } catch (error: any) {
-      toast.error("Erro no login com Google: " + error.message);
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,26 +245,6 @@ const Index = () => {
               </span>
             </Button>
 
-            <div className="flex items-center gap-3 pt-1">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">Ou</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  console.error("O script do Google Identity abortou a operação.");
-                  toast.error("O login com Google foi interrompido. Verifique se os pop-ups estão bloqueados no seu navegador.");
-                }}
-                useOneTap={false}
-                ux_mode="popup"
-                theme="outline"
-                shape="pill"
-                locale="pt_PT"
-              />
-            </div>
 
             <p className="pt-2 text-center text-sm text-muted-foreground">
               {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}
