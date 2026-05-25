@@ -1,5 +1,0 @@
-backend/
-pyproject.toml
-poetry.lock
-uv.lock
-.python-version

@@ -1,21 +1,12 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "npm --prefix Frontend install && npm --prefix Frontend run build",
+  "outputDirectory": "Frontend/dist",
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "Frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "Frontend/index.html"
+      "source": "/((?!assets/|favicon.ico|logo-.*).*)" ,
+      "destination": "/index.html"
     }
   ]
 }
