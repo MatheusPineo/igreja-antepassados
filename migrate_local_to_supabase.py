@@ -5,7 +5,7 @@ from backend.app.models.usuario import Usuario
 from backend.app.models.antepassado import Antepassado
 
 LOCAL_DB_URL = "sqlite:///reflex.db"
-SUPABASE_DB_URL = "postgresql://postgres:wfhknq8abcvzqvi9sh@db.ghvnkwiwochirnjeefyh.supabase.co:5432/postgres"
+SUPABASE_DB_URL = "postgresql://postgres.ghvnkwiwochirnjeefyh:wfhknq8abcvzqvi9sh@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require"
 
 local_engine = create_engine(LOCAL_DB_URL)
 supabase_engine = create_engine(SUPABASE_DB_URL)
