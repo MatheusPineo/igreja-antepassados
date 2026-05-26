@@ -8,6 +8,10 @@ Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica 
 - **Monitoramento Ativo de Processos no Dockerfile**: Ajustado o comando `CMD` no Dockerfile para rodar o `uvicorn` e o `caddy` em paralelo usando explicitamente o shell `/bin/bash -c` para suportar a instrução `wait -n` (não compatível com o shell padrão `/bin/sh` do Debian). Isso captura os PIDs de ambos e termina o container imediatamente se qualquer um dos dois processos falhar, impedindo que o Caddy continue ativo mascarando quedas com erros 502 Bad Gateway.
 - **Resiliência de Conexão ao Supabase (IPv4 Fallback)**: Desenvolvido um interceptador automático no [database.py](file:///c:/Users/mathe/projeto_messianica/backend/app/core/database.py) que identifica se o host direto do Supabase (`db.ghvnkwiwochirnjeefyh.supabase.co`) está sendo utilizado e converte dinamicamente em tempo de execução para a URL do **Transaction Pooler IPv4** (`aws-1-eu-central-1.pooler.supabase.com:6543`) com o respectivo tenant mapeado. Isso sana permanentemente as quedas por `Network is unreachable` causadas pela falta de suporte a IPv6 na rede do Render.
 
+### Fixed (Corrigido)
+- **Conflito de Múltiplas Sessões (Atualização de Perfil)**: Corrigido o erro 500 no endpoint `PUT /usuarios/me` que causava a mensagem "Internal server connection error". O usuário atualizado agora é explicitamente carregado na mesma sessão ativa do banco da rota local, evitando a exceção de colisão de sessões do SQLAlchemy.
+- **NameError no Guardião de Autenticação (JWTError)**: Corrigido o erro de NameError onde a variável de tratamento de exceção `JWTError` não existia no escopo devido ao uso da biblioteca `PyJWT` (o correto é `jwt.PyJWTError`). Isso garante que tokens inválidos ou expirados retornem HTTP 401 Unauthorized limpo ao invés de quebrarem o servidor em 500.
+
 ## [v1.1.0] - 2026-05-25
 ### Added (Adicionado)
 - **Supabase Data Migration (DB)**: Desenvolvido e executado rotina ETL completa em script Python apartado (`migrate_local_to_supabase.py`) para transporte das contas e dezenas de antepassados do SQLite local (reflex.db) para o cluster avançado Cloud PostgreSQL do Supabase.
