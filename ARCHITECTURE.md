@@ -23,3 +23,17 @@ O sistema foi reconstruído baseando-se no modelo puro de **Arquitetura Desacopl
   - *Otimização de Recursos*: O framework pesado `reflex` (não utilizado) foi completamente expurgado do `requirements.txt`, reduzindo significativamente a pegada de memória na compilação e inicialização do container no Render.
   - *Monitoramento Ativo de Container (Resiliência 502/Crash)*: O comando de inicialização `CMD` no Dockerfile monitora ativamente e em paralelo o `uvicorn` e o `caddy` através de controle de PID (`wait -n`). Se qualquer um dos processos morrer ou falhar ao inicializar (como conexões de banco de dados intermitentes), o container é encerrado imediatamente, forçando o Render a reiniciar o container de forma limpa e registrar a falha de imediato.
   - *Mitigação de OOM (Out Of Memory na Exportação)*: Geração de Relatórios (PDF) utilizando buffers lógicos matemáticos (`io.BytesIO`) através da biblioteca de baixo-nível ReportLab, banindo componentes pesados renderizadores baseados em Headless Webkit/Chromium ou geradores HTML2PDF nativos.
+
+## Regras de Negócios e Ordenação Hierárquica Estrita
+Para cumprir as diretrizes oficiais de preenchimento dos formulários do Culto de Antepassados, os registros são ordenados de forma determinística em 4 linhagens principais com prioridade interna para nomes de família ("Troncos").
+- **Blocos de Linhagem**:
+  1. Linhagem Paterna do Marido (contém "paterno" + "marido")
+  2. Linhagem Materna do Marido (contém "materno" + "marido")
+  3. Linhagem Paterna da Esposa (contém "paterno" sem "marido")
+  4. Linhagem Materna da Esposa (contém "materno" sem "marido")
+  5. Outros Vínculos
+- **Prioridade Interna**:
+  - Em cada bloco, os **Troncos** (indicando a linhagem/nome da família) precedem obrigatoriamente as pessoas individuais (ex: Bisavô, Avô, etc.).
+  - Os membros individuais são ordenados de forma secundária baseando-se na proximidade de parentesco tradicional.
+- **Implementação**:
+  - Esse algoritmo de ordenação é governado no backend através da função `get_ancestor_sort_key` em [antepassados.py](file:///c:/Users/mathe/projeto_messianica/backend/app/api/endpoints/antepassados.py) e aplicado simultaneamente nos endpoints de listagem de dados REST (`GET /`) e na compilação do relatório PDF (`GET /exportar-pdf`).

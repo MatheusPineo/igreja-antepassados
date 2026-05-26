@@ -13,6 +13,53 @@ from ...core.security import get_current_user
 from ...models.usuario import Usuario
 from ...models.antepassado import Antepassado
 
+def get_ancestor_sort_key(vinculo: str) -> tuple:
+    if not vinculo:
+        return (9, 9, 999, "")
+    
+    vinculo_lower = vinculo.lower()
+    
+    # 1. Determinação do bloco de linhagem (block_weight)
+    is_marido = "marido" in vinculo_lower
+    is_paterno = "paterno" in vinculo_lower
+    is_materno = "materno" in vinculo_lower
+    
+    if is_marido:
+        if is_paterno:
+            block = 1  # 1. Linhagem Paterna do Marido
+        elif is_materno:
+            block = 2  # 2. Linhagem Materna do Marido
+        else:
+            block = 5
+    else:
+        if is_paterno:
+            block = 3  # 3. Linhagem Paterna da Esposa
+        elif is_materno:
+            block = 4  # 4. Linhagem Materna da Esposa
+        else:
+            block = 5
+            
+    # 2. Categoria (category_weight): Tronco (Lineage Name) = 0 vs Membro Individual = 1
+    # Regra de ouro: "Troncos" sempre antes dos membros individuais do bloco.
+    is_tronco = "tronco" in vinculo_lower
+    category = 0 if is_tronco else 1
+    
+    # 3. Hierarquia tradicional para desempate secundário (hierarchy_weight)
+    parentescos = [
+        "tataravô", "tataravó", "bisavô", "bisavó", "avô", "avó", "pai", "mãe", "cônjuge",
+        "filhos(as)", "netos(as)", "tio-avô", "tia-avó", "tio", "tia",
+        "irmão", "irmã", "sobrinho", "sobrinha", "primo", "prima",
+        "parentes afins", "amigo", "amiga", "outro"
+    ]
+    
+    hierarchy_weight = 999
+    for idx, p in enumerate(parentescos):
+        if p in vinculo_lower:
+            hierarchy_weight = idx
+            break
+            
+    return (block, category, hierarchy_weight, vinculo_lower)
+
 router = APIRouter()
 
 @router.get("/", response_model=List[Antepassado])
@@ -22,7 +69,7 @@ def list_antepassados(
 ):
     try:
         antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == current_user.id)).all()
-        return antepassados
+        return sorted(antepassados, key=lambda a: get_ancestor_sort_key(a.vinculo))
     except Exception as e:
         raise e
 
@@ -68,21 +115,13 @@ def export_pdf(
     
     antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == user.id)).all()
     
-    hierarquia = [
-        "Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", "Pai", "Mãe", "Cônjuge",
-        "Filhos(as)", "Netos(as)", "Tio-avô", "Tia-avó", "Tio", "Tia",
-        "Irmão", "Irmã", "Sobrinho", "Sobrinha", "Primo", "Prima",
-        "Parentes afins", "Amigo", "Amiga", "Outro"
-    ]
-
     def processar_lote(lista_bruta):
+        itens_ordenados = sorted(lista_bruta, key=lambda a: get_ancestor_sort_key(a.vinculo))
         lote_ordenado = []
-        for cat in hierarquia:
-            itens = [a for a in lista_bruta if a.vinculo == cat]
-            for ant in itens:
-                nome = ant.nome_completo
-                alerta = " [ALERTA: Nome abreviado]" if any(p.endswith('.') for p in nome.split()) else ""
-                lote_ordenado.append({"ant": ant, "nome": f"{nome}{alerta}"})
+        for ant in itens_ordenados:
+            nome = ant.nome_completo
+            alerta = " [ALERTA: Nome abreviado]" if any(p.endswith('.') for p in nome.split()) else ""
+            lote_ordenado.append({"ant": ant, "nome": f"{nome}{alerta}"})
         return lote_ordenado
 
     lote_titular = processar_lote([a for a in antepassados if a.familia == "Minha Família"])
