@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
@@ -80,6 +80,23 @@ const BOND_OPTIONS = [
   "Amiga",
   "Outro",
 ];
+
+const getLineageSection = (vinculo: string): string => {
+  if (!vinculo) return "Outros Vínculos";
+  const v = vinculo.toLowerCase();
+  const isMarido = v.includes("marido");
+  const isPaterno = v.includes("paterno");
+  const isMaterno = v.includes("materno");
+  
+  if (isMarido) {
+    if (isPaterno) return "Linhagem Paterna do Marido (Troncos e Familiares)";
+    if (isMaterno) return "Linhagem Materna do Marido (Troncos e Familiares)";
+  } else {
+    if (isPaterno) return "Linhagem Paterna da Esposa (Troncos e Familiares)";
+    if (isMaterno) return "Linhagem Materna da Esposa (Troncos e Familiares)";
+  }
+  return "Outros Vínculos";
+};
 
 const Dashboard = () => {
   const { theme, setTheme } = useTheme();
@@ -551,46 +568,74 @@ const Dashboard = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  records.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      className="border-zinc-200/50 dark:border-zinc-700/50 transition-smooth hover:bg-muted/40"
-                    >
-                      <TableCell className={cn("font-medium", isDark ? "text-white" : "text-zinc-900")}>
-                        {r.nome_completo}
-                      </TableCell>
-                      <TableCell className={isDark ? "text-white" : "text-zinc-700"}>
-                        {r.vinculo}
-                      </TableCell>
-                      <TableCell className={isDark ? "text-white" : "text-zinc-700"}>
-                        {r.linhagem}
-                      </TableCell>
-                      <TableCell className={isDark ? "text-white" : "text-zinc-700"}>
-                        {r.familia}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary", isDark ? "text-white" : "text-zinc-500")}
-                            aria-label={`Editar ${r.nome_completo}`}
+                  (() => {
+                    let lastSection = "";
+                    return records.map((r) => {
+                      const section = getLineageSection(r.vinculo);
+                      const isTronco = r.vinculo.toLowerCase().includes("tronco");
+                      const showHeader = section !== lastSection;
+                      lastSection = section;
+
+                      return (
+                        <Fragment key={r.id}>
+                          {showHeader && (
+                            <TableRow className="bg-muted/40 hover:bg-muted/40 border-y border-border/80 select-none">
+                              <TableCell colSpan={5} className="py-2.5 px-4 font-semibold text-xs text-primary uppercase tracking-wider">
+                                {section}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          <TableRow
+                            className={cn(
+                              "border-zinc-200/50 dark:border-zinc-700/50 transition-smooth hover:bg-muted/40",
+                              isTronco && "bg-primary/5 hover:bg-primary/10 border-l-2 border-l-primary"
+                            )}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(r.id)}
-                            className={cn("h-8 w-8 hover:bg-destructive/10 hover:text-destructive", isDark ? "text-white" : "text-zinc-500")}
-                            aria-label={`Eliminar ${r.nome_completo}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            <TableCell className={cn("font-medium", isDark ? "text-white" : "text-zinc-900", isTronco && "font-semibold italic text-primary")}>
+                              <div className="flex items-center gap-2">
+                                {r.nome_completo}
+                                {isTronco && (
+                                  <span className="text-[9px] bg-primary/15 text-primary border border-primary/20 px-1.5 py-0.5 rounded font-bold not-italic uppercase tracking-wider">
+                                    Tronco
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className={cn(isDark ? "text-white" : "text-zinc-700", isTronco && "font-medium")}>
+                              {r.vinculo}
+                            </TableCell>
+                            <TableCell className={isDark ? "text-white" : "text-zinc-700"}>
+                              {r.linhagem}
+                            </TableCell>
+                            <TableCell className={isDark ? "text-white" : "text-zinc-700"}>
+                              {r.familia}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary", isDark ? "text-white" : "text-zinc-500")}
+                                  aria-label={`Editar ${r.nome_completo}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(r.id)}
+                                  className={cn("h-8 w-8 hover:bg-destructive/10 hover:text-destructive", isDark ? "text-white" : "text-zinc-500")}
+                                  aria-label={`Eliminar ${r.nome_completo}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </Fragment>
+                      );
+                    });
+                  })()
                 )}
               </TableBody>
             </Table>
