@@ -42,43 +42,44 @@ type Lineage = "Materna" | "Paterna" | "Não aplicável";
 type Family = "Minha Família" | "Família do Cônjuge";
 
 const BOND_OPTIONS = [
-  "Tataravô",
-  "Tataravó",
-  "Bisavô",
-  "Bisavó",
-  "Avô",
-  "Avó",
-  "Pai",
-  "Mãe",
-  "Cônjuge",
-  "Filho",
-  "Filha",
-  "Neto",
-  "Neta",
-  "Bisneto",
-  "Bisneta",
-  "Tio-avô",
-  "Tia-avó",
-  "Tio",
-  "Tia",
-  "Irmão",
-  "Irmã",
-  "Sobrinho",
-  "Sobrinha",
-  "Primo",
-  "Prima",
-  "Sogro",
-  "Sogra",
-  "Cunhado",
-  "Cunhada",
-  "Padrasto",
-  "Madrasta",
-  "Enteado",
-  "Enteada",
-  "Parente afim",
-  "Amigo",
-  "Amiga",
-  "Outro",
+  { label: "Tronco Familiar", value: "tronco" },
+  { label: "Tataravô", value: "Tataravô" },
+  { label: "Tataravó", value: "Tataravó" },
+  { label: "Bisavô", value: "Bisavô" },
+  { label: "Bisavó", value: "Bisavó" },
+  { label: "Avô", value: "Avô" },
+  { label: "Avó", value: "Avó" },
+  { label: "Pai", value: "Pai" },
+  { label: "Mãe", value: "Mãe" },
+  { label: "Cônjuge", value: "Cônjuge" },
+  { label: "Filho", value: "Filho" },
+  { label: "Filha", value: "Filha" },
+  { label: "Neto", value: "Neto" },
+  { label: "Neta", value: "Neta" },
+  { label: "Bisneto", value: "Bisneto" },
+  { label: "Bisneta", value: "Bisneta" },
+  { label: "Tio-avô", value: "Tio-avô" },
+  { label: "Tia-avó", value: "Tia-avó" },
+  { label: "Tio", value: "Tio" },
+  { label: "Tia", value: "Tia" },
+  { label: "Irmão", value: "Irmão" },
+  { label: "Irmã", value: "Irmã" },
+  { label: "Sobrinho", value: "Sobrinho" },
+  { label: "Sobrinha", value: "Sobrinha" },
+  { label: "Primo", value: "Primo" },
+  { label: "Prima", value: "Prima" },
+  { label: "Sogro", value: "Sogro" },
+  { label: "Sogra", value: "Sogra" },
+  { label: "Cunhado", value: "Cunhado" },
+  { label: "Cunhada", value: "Cunhada" },
+  { label: "Padrasto", value: "Padrasto" },
+  { label: "Madrasta", value: "Madrasta" },
+  { label: "Enteado", value: "Enteado" },
+  { label: "Enteada", value: "Enteada" },
+  { label: "Parente afim", value: "Parente afim" },
+  { label: "Amigo", value: "Amigo" },
+  { label: "Amiga", value: "Amiga" },
+  { label: "Outro", value: "Outro" }
 ];
 
 const getLineageSection = (vinculo: string): string => {
@@ -115,7 +116,7 @@ const Dashboard = () => {
     "Tataravô", "Tataravó", "Bisavô", "Bisavó", "Avô", "Avó", 
     "Tio-avô", "Tia-avó", "Tio", "Tia", "Primo", "Prima"
   ];
-  const canSelectLineage = allowedAncestors.includes(bond);
+  const canSelectLineage = allowedAncestors.includes(bond) || bond === "tronco";
 
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -180,9 +181,17 @@ const Dashboard = () => {
         toast.error("Preencha o nome e o vínculo");
         return;
     }
+    
+    let finalBond = bond;
+    if (bond === "tronco") {
+      const isMarido = family === "Família do Cônjuge";
+      const isPaterna = lineage === "Paterna";
+      finalBond = `tronco ${isPaterna ? "paterno" : "materno"}${isMarido ? " marido" : ""}`;
+    }
+    
     createMutation.mutate({
       nome_completo: spirit.trim(),
-      vinculo: bond,
+      vinculo: finalBond,
       linhagem: lineage,
       familia: family,
     } as Antepassado);
@@ -411,13 +420,13 @@ const Dashboard = () => {
               htmlFor="spirit"
               className={cn("text-xs font-medium", isDark ? "text-white" : "text-zinc-700")}
             >
-              Nome do Espírito
+              {bond === "tronco" ? "Nome da Família / Sobrenome (Tronco)" : "Nome do Espírito"}
             </Label>
             <Input
               id="spirit"
               value={spirit}
               onChange={(e) => setSpirit(e.target.value)}
-              placeholder="Ex.: Maria José"
+              placeholder={bond === "tronco" ? "Ex.: FOLHARINI" : "Ex.: Maria José"}
               className={cn(
                 "h-11 rounded-lg border-border bg-background text-sm placeholder:text-zinc-400 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/15",
                 isDark && "text-white border-zinc-700"
@@ -435,8 +444,8 @@ const Dashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {BOND_OPTIONS.map((b) => (
-                  <SelectItem key={b} value={b}>
-                    {b}
+                  <SelectItem key={b.value} value={b.value}>
+                    {b.label}
                   </SelectItem>
                 ))}
               </SelectContent>

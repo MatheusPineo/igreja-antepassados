@@ -14,7 +14,8 @@
   - Backend: FastAPI, SQLModel (Python 3.11+)
   - Frontend: React, Vite, TypeScript, Tailwind CSS, Shadcn/UI
   - Infraestrutura: Docker Multi-stage, Vercel (Front-end), Render (Back-end), Supabase/PostgreSQL (DB)
-- **Últimas Alterações e Estado Atual (Versão 1.4.2)**:
+- **Últimas Alterações e Estado Atual (Versão 1.4.3)**:
+  - Integração de Tronco Familiar no Formulário: Atualizada a UI de cadastro de antepassados em `Dashboard.tsx` para incluir a opção "Tronco Familiar" (`value: "tronco"`) no seletor de vínculos. Modificados dinamicamente o label para "Nome da Família / Sobrenome (Tronco)" e o placeholder do input para "Ex.: FOLHARINI" caso a opção esteja ativa. Alinhado o payload do formulário para concatenar o vínculo de tronco com a linhagem e família corretas antes de enviar ao backend.
   - Maximização e Refinamento de Pautas no PDF: Ajustado `topMargin` para `79mm` e `bottomMargin` para `24mm` na geração do PDF para que a primeira linha de dados assente exatamente sobre a primeira linha física do blueprint e a listagem ocupe as pautas de forma máxima até a base da folha.
   - Uniformização do Texto da Tabela: Removidos estilos especiais e cores para os registros "Tronco". Agora, todas as linhas utilizam uma única fonte regular em cor preta pura (`Helvetica`, 9pt, `colors.black`).
   - Correção de Roteamento SPA na Vercel (F5 404): Reposicionado e reconfigurado o arquivo `Frontend/vercel.json` sob a nova pasta raiz do deploy do frontend. Adicionada a regra de `rewrites` nativa apontando para o `index.html` para tratar rotas do lado do cliente (SPA), preservando os cabeçalhos `Cross-Origin-Opener-Policy: same-origin-allow-popups` do Google Login.

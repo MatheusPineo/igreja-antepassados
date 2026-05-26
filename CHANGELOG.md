@@ -2,6 +2,13 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
+## [v1.4.3] - 2026-05-26
+### Added (Adicionado)
+- **Integração de Tronco Familiar no Formulário de Cadastro**:
+  - Convertido o array `BOND_OPTIONS` em `Dashboard.tsx` para uma estrutura limpa de objetos `{ label, value }` e adicionada a opção "Tronco Familiar" (`value: "tronco"`).
+  - Implementado feedback dinâmico de UX no formulário: ao selecionar "Tronco Familiar", o label do input muda dinamicamente para "Nome da Família / Sobrenome (Tronco)" e o placeholder passa a exibir "Ex.: FOLHARINI". Para os outros parentescos, mantém-se o padrão.
+  - Alinhamento de payload no envio: ao submeter o formulário com a opção "tronco", o valor do vínculo é automaticamente convertido para o padrão do banco de dados (ex: `"tronco paterno marido"`) dependendo da Linhagem e da Família selecionadas.
+
 ## [v1.4.2] - 2026-05-26
 ### Changed (Alterado)
 - **Maximização e Refinamento de Pautas no PDF**:

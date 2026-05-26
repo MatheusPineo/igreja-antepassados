@@ -4,6 +4,10 @@ Bem-vindo à página de atualizações do Sistema de Antepassados! Aqui você ac
 
 ## O que há de novo?
 
+### Cadastro de Tronco Familiar no Painel (Novo)
+- **Seleção de Tronco Facilitada:** Adicionamos a opção "Tronco Familiar" no seletor de parentesco (Vínculo). Agora você pode cadastrar diretamente o sobrenome principal da sua linhagem.
+- **Formulário Inteligente:** Ao escolher "Tronco Familiar", os campos do formulário adaptam-se automaticamente, alterando a instrução para "Nome da Família / Sobrenome (Tronco)" e mostrando o exemplo correto (ex: "Ex.: FOLHARINI") para evitar erros de preenchimento.
+
 ### Nova Exportação de PDF com Alinhamento de Pauta Oficial (Novo)
 - **Aproveitamento Total e Alinhamento Perfeito:** O PDF foi ajustado para que o primeiro antepassado comece exatamente na primeira linha do formulário físico e a listagem se estenda até a última pauta disponível do rodapé antes da quebra automática de página.
 - **Texto Uniformizado em Preto Puro:** Todas as linhas do documento agora utilizam uma fonte homogênea regular em cor preta pura (`Helvetica`), sem diferenciações visuais ou destaques coloridos, atendendo rigorosamente aos critérios de preenchimento formal.
