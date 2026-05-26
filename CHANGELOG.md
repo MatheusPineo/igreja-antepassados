@@ -2,6 +2,11 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
+## [v1.4.0] - 2026-05-26
+### Added (Adicionado)
+- **Endpoint Protegido `GET /antepassados/pdf`**: Implementado novo endpoint protegido que expõe a exportação de antepassados para PDF em conformidade com o formato oficial da Igreja Messiânica.
+- **Nova Arquitetura de Layout do PDF (SimpleDocTemplate & Flowables)**: Migração do sistema antigo baseado em coordenadas físicas de Canvas para uma arquitetura baseada em Flowables (`SimpleDocTemplate`, `Table`, `Spacer` e `Paragraph`). A nova implementação realiza a quebra automática de páginas para listas grandes (64+ antepassados) sem estouros de layout ou sobreposição de textos, estiliza de forma destacada as linhas do tipo "Tronco" (em itálico/negrito e fundo com destaque azul claro) e agrupa os antepassados rigorosamente sob as seções de linhagem hierárquicas oficiais.
+
 ## [v1.3.1] - 2026-05-26
 ### Added (Adicionado)
 - **Script de Sementeira de Produção (`seed_mariana_ancestors.py`)**: Criado um script Python autônomo e resiliente na raiz do projeto para semear em lote 97 registros de antepassados oficiais associados à conta da usuária Mariana (`marianasvfolharini@gmail.com`) no Supabase de produção. O script implementa validações robustas de duplicidade, mapeamento automático de linhagens/famílias e usa o Transaction Pooler IPv4 para conexão em nuvem a partir do ambiente local.
