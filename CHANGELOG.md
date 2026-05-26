@@ -2,6 +2,10 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
+## [v1.3.1] - 2026-05-26
+### Added (Adicionado)
+- **Script de Sementeira de Produção (`seed_mariana_ancestors.py`)**: Criado um script Python autônomo e resiliente na raiz do projeto para semear em lote 97 registros de antepassados oficiais associados à conta da usuária Mariana (`marianasvfolharini@gmail.com`) no Supabase de produção. O script implementa validações robustas de duplicidade, mapeamento automático de linhagens/famílias e usa o Transaction Pooler IPv4 para conexão em nuvem a partir do ambiente local.
+
 ## [v1.3.0] - 2026-05-26
 ### Changed (Alterado)
 - **Ordenação Hierárquica Estrita de Antepassados (Regras do Culto)**: Adicionado um algoritmo dinâmico de chaves (`get_ancestor_sort_key`) em `antepassados.py` para classificar os registros em 4 blocos de linhagem estritos (Paterno/Materno do Marido, seguido por Paterno/Materno da Esposa), aplicando a regra oficial onde os "Troncos" (nomes de linhagem) precedem obrigatoriamente os membros individuais. O desempate secundário e final dentro de cada subcategoria foi tornado determinístico através de ordenação alfabética pelo campo `nome_completo`. Esse critério foi integrado na listagem REST da API e na geração de lotes do formulário em PDF.

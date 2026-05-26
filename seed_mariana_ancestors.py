@@ -1,15 +1,17 @@
 import sys
 import os
-from sqlmodel import Session, select
+from sqlmodel import Session, select, create_engine
 
 # Adiciona o diretório raiz ao path do Python para permitir imports do backend
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from backend.app.core.database import engine
 from backend.app.models.usuario import Usuario
 from backend.app.models.antepassado import Antepassado
 
 TARGET_EMAIL = "marianasvfolharini@gmail.com"
+
+# URL do Pooler IPv4 de produção do Supabase
+SUPABASE_DB_URL = "postgresql://postgres.ghvnkwiwochirnjeefyh:wfhknq8abcvzqvi9sh@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require"
 
 data = [
     {"nome_completo": "FOLHARINI", "vinculo": "tronco paterno marido"},
@@ -112,51 +114,68 @@ data = [
 ]
 
 def seed_mariana_ancestors():
-    print(f"Buscando usuária com e-mail: {TARGET_EMAIL}...")
-    with Session(engine) as session:
-        user = session.exec(select(Usuario).where(Usuario.email == TARGET_EMAIL)).first()
-        if not user:
-            print(f"ERRO: Usuária '{TARGET_EMAIL}' não encontrada. Abortando seed.")
-            return
+    print(f"Iniciando conexão com o Supabase de Produção...", flush=True)
+    
+    try:
+        prod_engine = create_engine(SUPABASE_DB_URL, echo=False)
+        print("Motor de banco de dados instanciado.", flush=True)
         
-        print(f"Usuária encontrada! ID: {user.id}. Iniciando inserção dos antepassados...")
-        
-        count = 0
-        for item in data:
-            # Verifica se já existe para evitar duplicados
-            existing = session.exec(
-                select(Antepassado).where(
-                    Antepassado.usuario_id == user.id,
-                    Antepassado.nome_completo == item["nome_completo"],
-                    Antepassado.vinculo == item["vinculo"]
-                )
-            ).first()
+        with Session(prod_engine) as session:
+            print(f"Buscando usuária no Supabase com e-mail: {TARGET_EMAIL}...", flush=True)
+            user = session.exec(select(Usuario).where(Usuario.email == TARGET_EMAIL)).first()
             
-            if not existing:
-                # Determina linhagem e família com base no vínculo
-                vinculo_lower = item["vinculo"].lower()
-                linhagem = "Paterna" if "paterna" in vinculo_lower or "paterno" in vinculo_lower else \
-                           "Materna" if "materna" in vinculo_lower or "materno" in vinculo_lower else \
-                           "Não aplicável"
-                           
-                familia = "Família do Cônjuge" if "marido" in vinculo_lower or "ex-marido" in vinculo_lower else "Minha Família"
+            if not user:
+                print(f"ERRO CRÍTICO: Usuária '{TARGET_EMAIL}' não encontrada na base de produção.", flush=True)
+                sys.exit(1)
                 
-                novo_antepassado = Antepassado(
-                    nome_completo=item["nome_completo"],
-                    vinculo=item["vinculo"],
-                    linhagem=linhagem,
-                    familia=familia,
-                    usuario_id=user.id
-                )
-                session.add(novo_antepassado)
-                count += 1
+            print(f"Usuária localizada! ID correspondente: {user.id}.", flush=True)
+            print("Mapeando e validando antepassados...", flush=True)
+            
+            count_inserted = 0
+            for idx, item in enumerate(data, 1):
+                nome = item["nome_completo"]
+                vinculo = item["vinculo"]
                 
-        if count > 0:
-            session.commit()
-            print(f"Sucesso! {count} novos antepassados adicionados para Mariana.")
-        else:
-            print("Nenhum novo antepassado para adicionar (todos já existem no banco).")
+                # Validação para evitar duplicatas exatas do mesmo registro
+                existing = session.exec(
+                    select(Antepassado).where(
+                        Antepassado.usuario_id == user.id,
+                        Antepassado.nome_completo == nome,
+                        Antepassado.vinculo == vinculo
+                    )
+                ).first()
+                
+                if not existing:
+                    vinculo_lower = vinculo.lower()
+                    linhagem = "Paterna" if "paterna" in vinculo_lower or "paterno" in vinculo_lower else \
+                               "Materna" if "materna" in vinculo_lower or "materno" in vinculo_lower else \
+                               "Não aplicável"
+                               
+                    familia = "Família do Cônjuge" if "marido" in vinculo_lower or "ex-marido" in vinculo_lower else "Minha Família"
+                    
+                    novo_antepassado = Antepassado(
+                        nome_completo=nome,
+                        vinculo=vinculo,
+                        linhagem=linhagem,
+                        familia=familia,
+                        usuario_id=user.id
+                    )
+                    session.add(novo_antepassado)
+                    count_inserted += 1
+                    print(f"[{idx}/{len(data)}] Preparado para inserção: '{nome}' ({vinculo})", flush=True)
+                else:
+                    print(f"[{idx}/{len(data)}] Ignorado (já existe): '{nome}' ({vinculo})", flush=True)
+            
+            if count_inserted > 0:
+                print(f"Executando transação de persistência em lote para {count_inserted} registros...", flush=True)
+                session.commit()
+                print(f"SUCESSO ABSOLUTO! {count_inserted} antepassados semeados com êxito para Mariana.", flush=True)
+            else:
+                print("Operação concluída. Todos os registros já estavam presentes no banco de dados.", flush=True)
+                
+    except Exception as e:
+        print(f"ERRO DE TRANSAÇÃO OU CONEXÃO: {e}", flush=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    # Como solicitado, a execução não será disparada automaticamente nesta fase.
-    print("Script preparado. Para rodar a inserção, execute seed_mariana_ancestors() ou chame o script via CLI.")
+    seed_mariana_ancestors()

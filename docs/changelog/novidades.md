@@ -4,6 +4,9 @@ Bem-vindo à página de atualizações do Sistema de Antepassados! Aqui você ac
 
 ## O que há de novo?
 
+### Importação de Registros Oficiais da Usuária Mariana (Novo)
+- **Carga de Dados Automatizada:** Concluímos com sucesso a importação em lote dos 97 registros de antepassados oficiais da conta de Mariana (`marianasvfolharini@gmail.com`) diretamente no nosso banco de dados em nuvem. Todos os registros foram mapeados e organizados de forma precisa de acordo com as regras de parentesco e linhagem do formulário.
+
 ### Ordenação Oficial para o Culto de Antepassados (Mais Recente)
 - **Organização Automática por Linhagem:** Implementamos a regra oficial de preenchimento dos formulários de prece. Agora o sistema organiza seus antepassados automaticamente de forma estrita em 4 linhagens (Linhagem Paterna do Marido, Linhagem Materna do Marido, Linhagem Paterna da Esposa, e Linhagem Materna da Esposa).
 - **Prioridade para os Nomes de Família (Troncos):** O sistema agora garante que os "Troncos" (nomes das linhagens/famílias) fiquem sempre no topo de cada bloco de preces, vindo antes dos membros individuais (como Avô, Bisavô, etc.). Isso assegura total conformidade com as diretrizes oficiais de impressão do PDF e listagem na tela do sistema.
