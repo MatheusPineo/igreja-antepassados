@@ -117,44 +117,26 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
     buffer = io.BytesIO()
     
     # A4 tem dimensões 210 x 297 mm.
-    # Definimos margens estritas de acordo com o template
+    # Ajustamos topMargin para 79mm e bottomMargin para 24mm para maximizar a utilização das pautas físicas
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
         leftMargin=20*mm,
         rightMargin=15*mm,
-        topMargin=85*mm,      # Margem superior de 85mm empurra a tabela para começar em y=212mm
-        bottomMargin=30*mm    # Margem inferior de 30mm interrompe a tabela em y=30mm
+        topMargin=79*mm,
+        bottomMargin=24*mm
     )
     
     styles = getSampleStyleSheet()
     
-    # Estilos de parágrafos compactos para caber no rowHeights de 6mm (17 pt)
-    name_style = ParagraphStyle(
-        'AncestorName',
+    # Estilo de parágrafo único, preto puro e peso regular
+    normal_style = ParagraphStyle(
+        'AncestorNormalText',
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=9,
         leading=11,
-        textColor=colors.HexColor("#1A202C")
-    )
-    
-    tronco_name_style = ParagraphStyle(
-        'TroncoName',
-        parent=styles['Normal'],
-        fontName='Helvetica-BoldOblique',
-        fontSize=9,
-        leading=11,
-        textColor=colors.HexColor("#1A365D")
-    )
-    
-    normal_cell_style = ParagraphStyle(
-        'NormalCell',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=9,
-        leading=11,
-        textColor=colors.HexColor("#2D3748")
+        textColor=colors.black
     )
 
     story = []
@@ -165,13 +147,8 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
         alerta = " [ALERTA: Nome abreviado]" if any(p.endswith('.') for p in nome.split()) else ""
         nome_completo_com_alerta = f"{nome}{alerta}"
         
-        is_tronco = "tronco" in a.vinculo.lower()
-        if is_tronco:
-            name_p = Paragraph(f"<b>{nome_completo_com_alerta}</b> <i>(Tronco)</i>", tronco_name_style)
-        else:
-            name_p = Paragraph(nome_completo_com_alerta, name_style)
-            
-        vinculo_p = Paragraph(a.vinculo, normal_cell_style)
+        name_p = Paragraph(nome_completo_com_alerta, normal_style)
+        vinculo_p = Paragraph(a.vinculo, normal_style)
         data_rows.append([name_p, vinculo_p])
         
     if data_rows:
@@ -187,7 +164,7 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
         ]))
         story.append(t)
     else:
-        story.append(Paragraph("Nenhum antepassado cadastrado.", name_style))
+        story.append(Paragraph("Nenhum antepassado cadastrado.", normal_style))
         
     image_path = os.path.join(os.getcwd(), "assets", "form_template.png")
     

@@ -5,9 +5,9 @@ Bem-vindo à página de atualizações do Sistema de Antepassados! Aqui você ac
 ## O que há de novo?
 
 ### Nova Exportação de PDF com Alinhamento de Pauta Oficial (Novo)
-- **Alinhamento Perfeito com a Pauta Física:** O PDF foi completamente reajustado para que os nomes dos antepassados e seus laços de parentesco fiquem desenhados exatamente em cima das linhas do formulário oficial da Igreja Messiânica. A tabela agora é impressa sem linhas artificiais pretas por cima do template, mantendo a folha limpa e no padrão exigido.
-- **Visualização Sem Limites:** Caso a lista de antepassados exceda as pautas da folha (mais de 30 nomes), o sistema cria automaticamente páginas adicionais com o fundo oficial da igreja sem sobreposição ou quebra de texto.
-- **Download Seguro e Indicador de Progresso:** A exportação é autenticada e protegida de forma integrada com a sua conta. O painel agora mostra o estado "Gerando..." no botão enquanto o documento é compilado.
+- **Aproveitamento Total e Alinhamento Perfeito:** O PDF foi ajustado para que o primeiro antepassado comece exatamente na primeira linha do formulário físico e a listagem se estenda até a última pauta disponível do rodapé antes da quebra automática de página.
+- **Texto Uniformizado em Preto Puro:** Todas as linhas do documento agora utilizam uma fonte homogênea regular em cor preta pura (`Helvetica`), sem diferenciações visuais ou destaques coloridos, atendendo rigorosamente aos critérios de preenchimento formal.
+- **Visualização Sem Limites e Download Seguro:** Caso o número de antepassados exceda 30 registros, são geradas novas páginas autenticadas com total segurança direto do painel.
 
 ### Importação de Registros Oficiais da Usuária Mariana (Novo)
 - **Carga de Dados Automatizada:** Concluímos com sucesso a importação em lote dos 97 registros de antepassados oficiais da conta de Mariana (`marianasvfolharini@gmail.com`) diretamente no nosso banco de dados em nuvem. Todos os registros foram mapeados e organizados de forma precisa de acordo com as regras de parentesco e linhagem do formulário.

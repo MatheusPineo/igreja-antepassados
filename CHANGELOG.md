@@ -2,6 +2,13 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
+## [v1.4.2] - 2026-05-26
+### Changed (Alterado)
+- **Maximização e Refinamento de Pautas no PDF**:
+  - Reduzida a margem superior (`topMargin`) de `85mm` para `79mm` e a inferior (`bottomMargin`) de `30mm` para `24mm` no `SimpleDocTemplate` para forçar o primeiro registro a alinhar-se perfeitamente com a primeira linha horizontal absoluta do template e estender a tabela até a última linha física no rodapé da página.
+- **Uniformização do Texto da Tabela de Antepassados**:
+  - Substituídos os estilos diferenciados de "Tronco" por um estilo único e homogêneo (`AncestorNormalText`) com fonte `Helvetica` regular e cor estritamente preta (`colors.black`), aplicando uma aparência uniforme de peso e cor para todos os antepassados.
+
 ## [v1.4.1] - 2026-05-26
 ### Changed (Alterado)
 - **Alinhamento do PDF com Pauta Física (`form_template.png`)**: Refatorada a função `generate_pdf_flowable` para mapear estritamente o layout de 2 colunas ("Nome Espírito/Família" na esquerda e "Parentesco/Vínculo" na direita) correspondente ao template físico da Igreja Messiânica.
