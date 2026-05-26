@@ -101,6 +101,7 @@ const getLineageSection = (vinculo: string): string => {
 const Dashboard = () => {
   const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<Usuario | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [editUser, setEditUser] = useState<Partial<Usuario>>({});
   const [spirit, setSpirit] = useState("");
   const [bond, setBond] = useState<string>("");
@@ -209,9 +210,25 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!user) return;
-    window.open(api.getExportUrl(), "_blank");
+    setIsExporting(true);
+    try {
+      const blob = await api.exportarPdf();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "antepassados.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("PDF baixado com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao exportar PDF: " + error.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Atualiza valores quando o vínculo muda
@@ -515,6 +532,7 @@ const Dashboard = () => {
             </div>
             <Button
               onClick={handleExportPDF}
+              disabled={isExporting}
               variant="outline"
               size="sm"
               className={cn(
@@ -522,8 +540,8 @@ const Dashboard = () => {
                 isDark && "border-primary/50 text-primary-foreground bg-primary/10"
               )}
             >
-              <FileDown className="h-4 w-4" />
-              Exportar PDF
+              <FileDown className={cn("h-4 w-4", isExporting && "animate-spin")} />
+              {isExporting ? "Gerando..." : "Exportar PDF"}
             </Button>
           </div>
 

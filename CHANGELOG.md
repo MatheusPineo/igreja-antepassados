@@ -6,6 +6,7 @@ Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica 
 ### Added (Adicionado)
 - **Endpoint Protegido `GET /antepassados/pdf`**: Implementado novo endpoint protegido que expõe a exportação de antepassados para PDF em conformidade com o formato oficial da Igreja Messiânica.
 - **Nova Arquitetura de Layout do PDF (SimpleDocTemplate & Flowables)**: Migração do sistema antigo baseado em coordenadas físicas de Canvas para uma arquitetura baseada em Flowables (`SimpleDocTemplate`, `Table`, `Spacer` e `Paragraph`). A nova implementação realiza a quebra automática de páginas para listas grandes (64+ antepassados) sem estouros de layout ou sobreposição de textos, estiliza de forma destacada as linhas do tipo "Tronco" (em itálico/negrito e fundo com destaque azul claro) e agrupa os antepassados rigorosamente sob as seções de linhagem hierárquicas oficiais.
+- **Download Seguro de PDF com JWT no Frontend**: Implementado o método `exportarPdf` no cliente de API utilizando o `fetch` nativo com `responseType: 'blob'`, protegendo a requisição com o token JWT ativo nos cabeçalhos de autorização. No `Dashboard.tsx`, foi adicionada a lógica de download local via criação e revogação temporária de Object URLs, juntamente com o indicador de estado de carregamento animado no botão de exportação da interface.
 
 ## [v1.3.1] - 2026-05-26
 ### Added (Adicionado)

@@ -36,6 +36,18 @@ export const api = {
   getExportUrl() {
     return `${API_URL}/antepassados/exportar-pdf`;
   },
+  async exportarPdf(): Promise<Blob> {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/antepassados/pdf`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error("Erro ao gerar o PDF");
+    }
+    return response.blob();
+  },
 
   // Usuários
   async getUsuario(): Promise<Usuario> {

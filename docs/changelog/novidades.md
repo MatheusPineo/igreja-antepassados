@@ -7,6 +7,7 @@ Bem-vindo à página de atualizações do Sistema de Antepassados! Aqui você ac
 ### Nova Exportação de PDF com Quebra de Páginas Automática (Novo)
 - **Visualização Profissional Sem Limites:** Implementamos uma nova tecnologia de geração de PDF baseada em blocos dinâmicos. Agora, a exportação dos seus antepassados ajusta-se automaticamente ao tamanho das páginas (A4). Se a sua lista de antepassados for grande (mais de 60 ou 90 nomes), o sistema gerará páginas adicionais de forma perfeitamente alinhada, mantendo o cabeçalho e rodapé simétricos sem cortar nenhum nome.
 - **Divisão Clara de Linhagens:** Os antepassados no PDF aparecem agora divididos pelas 4 seções de linhagem oficiais com títulos nítidos de cabeçalho, além de destaque visual e itálico para os nomes da categoria "Tronco".
+- **Download Seguro e Indicador de Progresso:** Para garantir a total segurança dos dados de seus antepassados, a exportação agora é autenticada diretamente na plataforma com a sua sessão ativa. O botão de download no painel exibe um indicador animado de progresso ("Gerando...") enquanto o servidor prepara o seu documento com segurança.
 
 ### Importação de Registros Oficiais da Usuária Mariana (Novo)
 - **Carga de Dados Automatizada:** Concluímos com sucesso a importação em lote dos 97 registros de antepassados oficiais da conta de Mariana (`marianasvfolharini@gmail.com`) diretamente no nosso banco de dados em nuvem. Todos os registros foram mapeados e organizados de forma precisa de acordo com as regras de parentesco e linhagem do formulário.
