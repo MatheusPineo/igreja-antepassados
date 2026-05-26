@@ -10,6 +10,9 @@ Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica 
   - As bordas e fundos da tabela foram definidos como transparentes (`None`) para deixar o fundo original da folha intacto.
   - O cabeçalho de títulos ("Nome Espírito" e "Vinculo") e as informações do fiel no rodapé foram desacoplados da tabela de Flowables e posicionados estaticamente via callback de canvas para evitar desalinhamento nas quebras de página.
 
+### Fixed (Corrigido)
+- **Erro de Roteamento SPA na Vercel (404 no F5)**: Criada e ajustada a configuração do arquivo `Frontend/vercel.json` diretamente na raiz de deploy do frontend. Adicionou-se a regra de rewrites nativa para direcionamento ao `index.html` em requisições de rotas cliente, resolvendo os erros 404 em hard-refresh (F5) no `/dashboard`. A configuração preserva os cabeçalhos de CORS/COOP exigidos pela autenticação do ecossistema Google.
+
 ## [v1.4.0] - 2026-05-26
 ### Added (Adicionado)
 - **Endpoint Protegido `GET /antepassados/pdf`**: Implementado novo endpoint protegido que expõe a exportação de antepassados para PDF em conformidade com o formato oficial da Igreja Messiânica.
