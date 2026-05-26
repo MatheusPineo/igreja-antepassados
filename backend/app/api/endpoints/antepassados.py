@@ -9,7 +9,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
+from reportlab.lib.units import cm, mm
 
 from ...core.database import get_session
 from ...core.security import get_current_user
@@ -114,60 +114,29 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
     antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == user.id)).all()
     antepassados_ordenados = sorted(antepassados, key=lambda a: get_ancestor_sort_key(a.vinculo, a.nome_completo))
     
-    # 4 linhagens oficiais + outros vínculos
-    lineage_titles = {
-        1: "1. Linhagem Paterna do Marido (Troncos e Familiares)",
-        2: "2. Linhagem Materna do Marido (Troncos e Familiares)",
-        3: "3. Linhagem Paterna da Esposa (Troncos e Familiares)",
-        4: "4. Linhagem Materna da Esposa (Troncos e Familiares)",
-        5: "5. Outros Vínculos e Registros de Afinidade"
-    }
-    
-    blocos = {1: [], 2: [], 3: [], 4: [], 5: []}
-    for a in antepassados_ordenados:
-        key = get_ancestor_sort_key(a.vinculo, a.nome_completo)
-        bloco_id = key[0] if key[0] in [1, 2, 3, 4] else 5
-        blocos[bloco_id].append(a)
-        
     buffer = io.BytesIO()
+    
+    # A4 tem dimensões 210 x 297 mm.
+    # Definimos margens estritas de acordo com o template
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        leftMargin=1.5*cm,
-        rightMargin=1.5*cm,
-        topMargin=1.5*cm,
-        bottomMargin=1.5*cm
+        leftMargin=20*mm,
+        rightMargin=15*mm,
+        topMargin=85*mm,      # Margem superior de 85mm empurra a tabela para começar em y=212mm
+        bottomMargin=30*mm    # Margem inferior de 30mm interrompe a tabela em y=30mm
     )
     
     styles = getSampleStyleSheet()
     
-    # Estilos customizados
-    header_title_style = ParagraphStyle(
-        'HeaderTitle',
-        parent=styles['Title'],
-        fontName='Helvetica-Bold',
-        fontSize=15,
-        textColor=colors.HexColor("#1A365D"),
-        alignment=1, # Centralizado
-        spaceAfter=5
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'SubTitle',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=10,
-        alignment=1,
-        textColor=colors.HexColor("#4A5568"),
-        spaceAfter=15
-    )
-    
+    # Estilos de parágrafos compactos para caber no rowHeights de 6mm (17 pt)
     name_style = ParagraphStyle(
         'AncestorName',
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=9,
-        textColor=colors.HexColor("#2D3748")
+        leading=11,
+        textColor=colors.HexColor("#1A202C")
     )
     
     tronco_name_style = ParagraphStyle(
@@ -175,6 +144,7 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
         parent=styles['Normal'],
         fontName='Helvetica-BoldOblique',
         fontSize=9,
+        leading=11,
         textColor=colors.HexColor("#1A365D")
     )
     
@@ -183,131 +153,67 @@ def generate_pdf_flowable(session: Session, user: Usuario) -> io.BytesIO:
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=9,
+        leading=11,
         textColor=colors.HexColor("#2D3748")
     )
 
     story = []
+    data_rows = []
     
-    # Cabeçalho da Igreja
-    story.append(Paragraph("IGREJA MESSIÂNICA MUNDIAL DE PORTUGAL", header_title_style))
-    story.append(Paragraph("Culto de Antepassados - Registro de Linhagens Oficial", subtitle_style))
-    
-    # Dados do Fiel
-    fiel_data = [
-        [
-            Paragraph(f"<b>Fiel Titular:</b> {user.nome_real} {user.sobrenome}", normal_cell_style),
-            Paragraph(f"<b>Igreja / Centro de Difusão:</b> {user.igreja}", normal_cell_style)
-        ],
-        [
-            Paragraph(f"<b>Estado Civil:</b> {user.estado_civil}", normal_cell_style),
-            Paragraph(f"<b>Data de Emissão:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", normal_cell_style)
-        ]
-    ]
-    fiel_table = Table(fiel_data, colWidths=[9*cm, 9*cm])
-    fiel_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
-        ('PADDING', (0, 0), (-1, -1), 6),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
-    story.append(fiel_table)
-    story.append(Spacer(1, 15))
-    
-    # Renderização dos Blocos de Linhagem
-    has_records = False
-    for bloco_id in [1, 2, 3, 4, 5]:
-        lista_bloco = blocos[bloco_id]
-        if not lista_bloco:
-            continue
+    for a in antepassados_ordenados:
+        nome = a.nome_completo
+        alerta = " [ALERTA: Nome abreviado]" if any(p.endswith('.') for p in nome.split()) else ""
+        nome_completo_com_alerta = f"{nome}{alerta}"
+        
+        is_tronco = "tronco" in a.vinculo.lower()
+        if is_tronco:
+            name_p = Paragraph(f"<b>{nome_completo_com_alerta}</b> <i>(Tronco)</i>", tronco_name_style)
+        else:
+            name_p = Paragraph(nome_completo_com_alerta, name_style)
             
-        has_records = True
-        title_text = lineage_titles[bloco_id]
+        vinculo_p = Paragraph(a.vinculo, normal_cell_style)
+        data_rows.append([name_p, vinculo_p])
         
-        # Cabeçalho da Seção (Divisor azul)
-        sec_p = Paragraph(f"<b>{title_text.upper()}</b>", ParagraphStyle('SecText', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, fontSize=9))
-        section_header = Table([[sec_p]], colWidths=[18*cm])
-        section_header.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#1A365D")),
-            ('PADDING', (0, 0), (-1, -1), 5),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ]))
-        
-        story.append(KeepTogether([
-            section_header,
-            Spacer(1, 4)
-        ]))
-        
-        # Tabela com dados
-        rows = []
-        rows.append([
-            Paragraph("<b>Nome Completo</b>", ParagraphStyle('ColH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor("#4A5568"))),
-            Paragraph("<b>Parentesco / Vínculo</b>", ParagraphStyle('ColH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor("#4A5568"))),
-            Paragraph("<b>Linhagem / Família</b>", ParagraphStyle('ColH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor("#4A5568")))
-        ])
-        
-        for a in lista_bloco:
-            nome = a.nome_completo
-            alerta = " [ALERTA: Nome abreviado]" if any(p.endswith('.') for p in nome.split()) else ""
-            nome_completo_com_alerta = f"{nome}{alerta}"
-            
-            is_tronco = "tronco" in a.vinculo.lower()
-            if is_tronco:
-                name_p = Paragraph(f"<b>{nome_completo_com_alerta}</b> <i>(Tronco)</i>", tronco_name_style)
-            else:
-                name_p = Paragraph(nome_completo_com_alerta, name_style)
-                
-            vinculo_p = Paragraph(a.vinculo, normal_cell_style)
-            familia_p = Paragraph(f"{a.linhagem} ({a.familia})", normal_cell_style)
-            
-            rows.append([name_p, vinculo_p, familia_p])
-            
-        t = Table(rows, colWidths=[8.5*cm, 4.5*cm, 5.0*cm])
-        
-        t_styles = [
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#EDF2F7")),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+    if data_rows:
+        # colWidths: Coluna 1 (Nome) tem 120mm. Coluna 2 (Vínculo) ocupa o restante da largura útil (55mm).
+        # rowHeights: Fixados em exatamente 6mm por linha para coincidir com as pautas físicas do papel.
+        t = Table(data_rows, colWidths=[120*mm, 55*mm], rowHeights=6*mm)
+        t.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ]
-        
-        # Colorir linhas dos Troncos
-        for idx, a in enumerate(lista_bloco, 1):
-            if "tronco" in a.vinculo.lower():
-                t_styles.append(('BACKGROUND', (0, idx), (-1, idx), colors.HexColor("#EBF8FF")))
-                
-        t.setStyle(TableStyle(t_styles))
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ]))
         story.append(t)
-        story.append(Spacer(1, 12))
+    else:
+        story.append(Paragraph("Nenhum antepassado cadastrado.", name_style))
         
-    if not has_records:
-        story.append(Paragraph("Nenhum antepassado cadastrado até o momento.", ParagraphStyle('NoRec', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#718096"), alignment=1)))
-        
-    # Aviso de Aborto
-    has_aborto = any("aborto" in a.nome_completo.lower() or "aborto" in a.vinculo.lower() for a in antepassados)
-    if has_aborto:
-        warn_text = "<b>AVISO IMPORTANTE:</b> Para registros de aborto, é recomendado consultar um ministro da Sede para orientação correta sobre o preenchimento espiritual do formulário."
-        warn_box = Table([[Paragraph(warn_text, ParagraphStyle('WarnText', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#744210")))]], colWidths=[18*cm])
-        warn_box.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#FEFCBF")),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#F6E05E")),
-            ('PADDING', (0, 0), (-1, -1), 8),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ]))
-        story.append(Spacer(1, 10))
-        story.append(warn_box)
-        
-    def add_footer(canvas, doc):
+    image_path = os.path.join(os.getcwd(), "assets", "form_template.png")
+    
+    def draw_background_and_footer(canvas, doc):
         canvas.saveState()
-        canvas.setFont('Helvetica', 8)
-        canvas.setFillColor(colors.HexColor("#718096"))
-        date_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        canvas.drawString(1.5*cm, 1.0*cm, f"Gerado em: {date_str} | Fiel: {user.nome_real} {user.sobrenome}")
-        canvas.drawRightString(A4[0] - 1.5*cm, 1.0*cm, f"Página {doc.page}")
+        # Desenha a folha de fundo em A4 completo
+        if os.path.exists(image_path):
+            canvas.drawImage(image_path, 0, 0, width=210*mm, height=297*mm, preserveAspectRatio=True)
+            
+        # Títulos estáticos das colunas logo acima da tabela (a 218mm de altura)
+        canvas.setFont("Helvetica-Bold", 10)
+        canvas.drawString(20*mm, 218*mm, "Nome Espírito")
+        canvas.drawString(140*mm, 218*mm, "Vinculo / Linhagem / Família")
+        
+        # Dados do Fiel desenhados estaticamente na parte inferior
+        canvas.setFont("Helvetica", 9)
+        data_hoje = datetime.now().strftime("%d/%m/%Y")
+        hora_atual = datetime.now().strftime("%H:%M:%S")
+        canvas.drawCentredString(105*mm, 21*mm, f"{user.igreja}, 02 de novembro de 2026")
+        canvas.drawString(20*mm, 15*mm, f"Nome: {user.nome_real} {user.sobrenome} - {user.estado_civil}")
+        canvas.drawString(20*mm, 10*mm, f"Igreja: {user.igreja}")
+        canvas.drawString(20*mm, 5*mm, f"Enviado em {data_hoje} às {hora_atual}")
+        canvas.drawRightString(195*mm, 5*mm, f"Página {doc.page}")
         canvas.restoreState()
         
-    doc.build(story, onFirstPage=add_footer, onLaterPages=add_footer)
+    doc.build(story, onFirstPage=draw_background_and_footer, onLaterPages=draw_background_and_footer)
     buffer.seek(0)
     return buffer
 

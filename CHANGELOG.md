@@ -2,6 +2,14 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
+## [v1.4.1] - 2026-05-26
+### Changed (Alterado)
+- **Alinhamento do PDF com Pauta Física (`form_template.png`)**: Refatorada a função `generate_pdf_flowable` para mapear estritamente o layout de 2 colunas ("Nome Espírito/Família" na esquerda e "Parentesco/Vínculo" na direita) correspondente ao template físico da Igreja Messiânica.
+  - A tabela agora possui larguras exatas (`120mm` e `55mm`) para coincidir com a divisória vertical impressa.
+  - Fixada a altura das linhas (`rowHeights=6mm`) com espaçamentos internos zerados para assentar o texto perfeitamente sobre as pautas físicas.
+  - As bordas e fundos da tabela foram definidos como transparentes (`None`) para deixar o fundo original da folha intacto.
+  - O cabeçalho de títulos ("Nome Espírito" e "Vinculo") e as informações do fiel no rodapé foram desacoplados da tabela de Flowables e posicionados estaticamente via callback de canvas para evitar desalinhamento nas quebras de página.
+
 ## [v1.4.0] - 2026-05-26
 ### Added (Adicionado)
 - **Endpoint Protegido `GET /antepassados/pdf`**: Implementado novo endpoint protegido que expõe a exportação de antepassados para PDF em conformidade com o formato oficial da Igreja Messiânica.
