@@ -9,6 +9,9 @@ Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica 
   - Implementado feedback dinâmico de UX no formulário: ao selecionar "Tronco Familiar", o label do input muda dinamicamente para "Nome da Família / Sobrenome (Tronco)" e o placeholder passa a exibir "Ex.: FOLHARINI". Para os outros parentescos, mantém-se o padrão.
   - Alinhamento de payload no envio: ao submeter o formulário com a opção "tronco", o valor do vínculo é automaticamente convertido para o padrão do banco de dados (ex: `"tronco paterno marido"`) dependendo da Linhagem e da Família selecionadas.
 
+### Fixed (Corrigido)
+- **Correção Definitiva de Roteamento SPA na Vercel (404 no F5)**: Removido o arquivo `vercel.json` da raiz do repositório para evitar conflito de containers de build na Vercel. Configurado o arquivo [Frontend/vercel.json](file:///c:/Users/mathe/projeto_messianica/Frontend/vercel.json) de forma estrita usando a propriedade `"routes"` com o manipulador `"handle": "filesystem"` em conjunto com o redirecionamento fallback para `/index.html`. Isso garante que todos os arquivos estáticos sejam servidos corretamente pelo servidor e que recarregamentos manuais (F5) no `/dashboard` funcionem perfeitamente.
+
 ## [v1.4.2] - 2026-05-26
 ### Changed (Alterado)
 - **Maximização e Refinamento de Pautas no PDF**:
