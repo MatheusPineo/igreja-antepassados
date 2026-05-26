@@ -2,11 +2,11 @@
 
 Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica deste projeto serão documentadas estritamente neste arquivo histórico.
 
-## [v1.2.0] - 2026-05-26
+## [v1.3.0] - 2026-05-26
 ### Changed (Alterado)
+- **Ordenação Hierárquica Estrita de Antepassados (Regras do Culto)**: Adicionado um algoritmo dinâmico de chaves (`get_ancestor_sort_key`) em `antepassados.py` para classificar os registros em 4 blocos de linhagem estritos (Paterno/Materno do Marido, seguido por Paterno/Materno da Esposa), aplicando a regra oficial onde os "Troncos" (nomes de linhagem) precedem obrigatoriamente os membros individuais. O desempate secundário e final dentro de cada subcategoria foi tornado determinístico através de ordenação alfabética pelo campo `nome_completo`. Esse critério foi integrado na listagem REST da API e na geração de lotes do formulário em PDF.
 - **Expulsão do Reflex (Otimização)**: Removido o framework pesado `reflex` do `requirements.txt`. Como o backend utiliza exclusivamente FastAPI, a remoção do reflex reduziu drasticamente o consumo de memória OOM durante o build e inicialização no Render (limite de 512MB).
 - **Monitoramento Ativo de Processos no Dockerfile**: Ajustado o comando `CMD` no Dockerfile para rodar o `uvicorn` e o `caddy` em paralelo usando explicitamente o shell `/bin/bash -c` para suportar a instrução `wait -n` (não compatível com o shell padrão `/bin/sh` do Debian). Isso captura os PIDs de ambos e termina o container imediatamente se qualquer um dos dois processos falhar, impedindo que o Caddy continue ativo mascarando quedas com erros 502 Bad Gateway.
-- **Ordenação Hierárquica Estrita de Antepassados (Regras do Culto)**: Adicionado um algoritmo dinâmico de chaves (`get_ancestor_sort_key`) em `antepassados.py` para classificar os registros em 4 blocos de linhagem estritos (Paterno/Materno do Marido, seguido por Paterno/Materno da Esposa), aplicando a regra oficial onde os "Troncos" (nomes de linhagem) precedem obrigatoriamente os membros individuais. Esse critério foi integrado na listagem REST da API e na geração de lotes do formulário em PDF.
 - **Resiliência de Conexão ao Supabase (IPv4 Fallback)**: Desenvolvido um interceptador automático no [database.py](file:///c:/Users/mathe/projeto_messianica/backend/app/core/database.py) que identifica se o host direto do Supabase (`db.ghvnkwiwochirnjeefyh.supabase.co`) está sendo utilizado e converte dinamicamente em tempo de execução para a URL do **Transaction Pooler IPv4** (`aws-1-eu-central-1.pooler.supabase.com:6543`) com o respectivo tenant mapeado. Isso sana permanentemente as quedas por `Network is unreachable` causadas pela falta de suporte a IPv6 na rede do Render.
 
 ### Fixed (Corrigido)

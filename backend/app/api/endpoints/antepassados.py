@@ -13,11 +13,12 @@ from ...core.security import get_current_user
 from ...models.usuario import Usuario
 from ...models.antepassado import Antepassado
 
-def get_ancestor_sort_key(vinculo: str) -> tuple:
+def get_ancestor_sort_key(vinculo: str, nome_completo: str = "") -> tuple:
     if not vinculo:
-        return (9, 9, 999, "")
+        return (9, 9, 999, "", "")
     
     vinculo_lower = vinculo.lower()
+    nome_completo_lower = nome_completo.lower() if nome_completo else ""
     
     # 1. Determinação do bloco de linhagem (block_weight)
     is_marido = "marido" in vinculo_lower
@@ -58,7 +59,7 @@ def get_ancestor_sort_key(vinculo: str) -> tuple:
             hierarchy_weight = idx
             break
             
-    return (block, category, hierarchy_weight, vinculo_lower)
+    return (block, category, hierarchy_weight, vinculo_lower, nome_completo_lower)
 
 router = APIRouter()
 
@@ -69,7 +70,7 @@ def list_antepassados(
 ):
     try:
         antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == current_user.id)).all()
-        return sorted(antepassados, key=lambda a: get_ancestor_sort_key(a.vinculo))
+        return sorted(antepassados, key=lambda a: get_ancestor_sort_key(a.vinculo, a.nome_completo))
     except Exception as e:
         raise e
 
@@ -116,7 +117,7 @@ def export_pdf(
     antepassados = session.exec(select(Antepassado).where(Antepassado.usuario_id == user.id)).all()
     
     def processar_lote(lista_bruta):
-        itens_ordenados = sorted(lista_bruta, key=lambda a: get_ancestor_sort_key(a.vinculo))
+        itens_ordenados = sorted(lista_bruta, key=lambda a: get_ancestor_sort_key(a.vinculo, a.nome_completo))
         lote_ordenado = []
         for ant in itens_ordenados:
             nome = ant.nome_completo
