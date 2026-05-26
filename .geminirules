@@ -14,7 +14,8 @@
   - Backend: FastAPI, SQLModel (Python 3.11+)
   - Frontend: React, Vite, TypeScript, Tailwind CSS, Shadcn/UI
   - Infraestrutura: Docker Multi-stage, Vercel (Front-end), Render (Back-end), Supabase/PostgreSQL (DB)
-- **Últimas Alterações e Estado Atual (Versão 1.1.0)**:
+- **Últimas Alterações e Estado Atual (Versão 1.2.0)**:
+  - Estabilização da API (Render): Removido o framework desnecessário `reflex` do `requirements.txt`, reduzindo expressivamente o consumo de recursos na inicialização do container. O Dockerfile foi atualizado para monitorar os PIDs do `uvicorn` e do `caddy` em paralelo com `wait -n`, forçando o reinício transparente em caso de falha física no uvicorn em vez de mascarar erros por baixo de um 502 Bad Gateway silencioso.
   - Migração de Banco de Dados: Criado script (`migrate_local_to_supabase.py`) e migrado o banco SQLite (`reflex.db`) com sucesso para Supabase PostgreSQL (usuários e 64 antepassados preservados).
   - Backend Blindado (Render): Otimizado Pool do SQLAlchemy (`pool_size`, `timeout`). Implementado `Global Exception Middleware` para impedir crashes (erro 502 HTML). Endpoint `/auth/google` aprimorado com tratamento de falhas transacionais rígido e injeção de CORS Headers (COOP).
   - Frontend Otimizado (Vercel): Configurado `Frontend/vercel.json` de modo estrito e segregado para isolar compilações exclusivas do framework Vite, impedindo falsos-positivos serverless com Python. Inicializador de Google Login forçado com `ux_mode="popup"` desativando OneTap/FedCM para suprimir restrições em comunicação postMessage.

@@ -7,7 +7,6 @@ python-multipart==0.0.22
 alembic==1.18.4
 psycopg2-binary==2.9.11
 httpx==0.28.1
-reflex
 google-auth
 requests
 passlib[bcrypt]
