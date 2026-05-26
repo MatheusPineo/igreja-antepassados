@@ -5,7 +5,7 @@ Todas as alterações notáveis, falhas resolvidas e saltos de versão técnica 
 ## [v1.2.0] - 2026-05-26
 ### Changed (Alterado)
 - **Expulsão do Reflex (Otimização)**: Removido o framework pesado `reflex` do `requirements.txt`. Como o backend utiliza exclusivamente FastAPI, a remoção do reflex reduziu drasticamente o consumo de memória OOM durante o build e inicialização no Render (limite de 512MB).
-- **Monitoramento Ativo de Processos no Dockerfile**: Ajustado o comando `CMD` no Dockerfile para rodar o `uvicorn` e o `caddy` em paralelo e capturar os PIDs de ambos, terminando o container imediatamente se qualquer um dos dois processos falhar (`wait -n`). Isso evita que o Caddy continue ativo fingindo integridade (gerando erros 502 Bad Gateway e Failed to fetch silenciados) quando o backend FastAPI cai por interrupções de rede ou banco.
+- **Monitoramento Ativo de Processos no Dockerfile**: Ajustado o comando `CMD` no Dockerfile para rodar o `uvicorn` e o `caddy` em paralelo usando explicitamente o shell `/bin/bash -c` para suportar a instrução `wait -n` (não compatível com o shell padrão `/bin/sh` do Debian). Isso captura os PIDs de ambos e termina o container imediatamente se qualquer um dos dois processos falhar, impedindo que o Caddy continue ativo mascarando quedas com erros 502 Bad Gateway.
 
 ## [v1.1.0] - 2026-05-25
 ### Added (Adicionado)

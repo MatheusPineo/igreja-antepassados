@@ -43,4 +43,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8080
 
 # Inicia o backend do FastAPI e liga o Caddy
-CMD uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 & uvicorn_pid=$!; caddy run --config Caddyfile & caddy_pid=$!; wait -n; exit $?
+CMD ["/bin/bash", "-c", "uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 & uvicorn_pid=$!; caddy run --config Caddyfile & caddy_pid=$!; wait -n; exit $?"]
